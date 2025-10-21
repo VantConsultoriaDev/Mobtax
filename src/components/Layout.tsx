@@ -44,8 +44,8 @@ const Layout: React.FC = () => {
 
   const hasPermission = (permission: string) => {
     if (!user) return false
-    if (user.type === 'admin') return true
-    return user.permissions[permission as keyof typeof user.permissions] !== 'none'
+    if (user.role === 'admin') return true
+    return user.permissions?.[permission as keyof typeof user.permissions] !== 'none'
   }
 
   const filteredNavigation = navigation.filter(item => hasPermission(item.permission))
@@ -185,7 +185,7 @@ const Layout: React.FC = () => {
                     {user?.username}
                   </div>
                   <div className="text-xs text-purple-500 dark:text-purple-400 capitalize">
-                    {user?.type}
+                    {user?.role}
                   </div>
                 </div>
                 <button

@@ -31,15 +31,15 @@ export interface Parceiro {
   tipo: 'juridica' | 'fisica'
   nome?: string
   documento?: string
+  cnh?: string
   email?: string
   telefone?: string
-  endereco?: {
-    cep?: string
-    logradouro?: string
-    bairro?: string
-    cidade?: string
-    estado?: string
-  }
+  endereco?: string
+  cidade?: string
+  estado?: string
+  cep?: string
+  observacoes?: string
+  isMotorista?: boolean
   isActive?: boolean
   createdAt: Date
   updatedAt: Date

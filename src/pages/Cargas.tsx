@@ -444,7 +444,7 @@ const Cargas: React.FC = () => {
                             className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                             title="Alterar status"
                           >
-                            <MoreVertical className="h-4 w-4" />
+                            <RefreshCw className="h-4 w-4" />
                           </button>
                           {showStatusDropdown === carga.id && (
                             <div className="absolute right-0 mt-2 w-44 z-50 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5">

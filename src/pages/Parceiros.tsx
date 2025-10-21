@@ -39,10 +39,7 @@ export default function Parceiros() {
   const [showVeiculoForm, setShowVeiculoForm] = useState(false);
   const [showVinculacaoModal, setShowVinculacaoModal] = useState(false);
   const [vinculacaoData, setVinculacaoData] = useState<{type: 'motorista' | 'veiculo', item: any}>({type: 'motorista', item: null});
-  const [showBlockModal, setShowBlockModal] = useState(false);
-  const [showUnblockModal, setShowUnblockModal] = useState(false);
-  const [parceiroToBlock, setParceiroToBlock] = useState<any>(null);
-  const [parceiroToUnblock, setParceiroToUnblock] = useState<any>(null);
+
   
   const [editingParceiro, setEditingParceiro] = useState<any>(null);
   const [editingMotorista, setEditingMotorista] = useState<any>(null);
@@ -51,6 +48,10 @@ export default function Parceiros() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  
+  // Filtros para veículos e motoristas
+  const [veiculoSearchTerm, setVeiculoSearchTerm] = useState('');
+  const [motoristaSearchTerm, setMotoristaSearchTerm] = useState('');
 
   // Forms
   const [parceiroForm, setParceiroForm] = useState({
@@ -165,21 +166,7 @@ export default function Parceiros() {
     }
   });
 
-  const { modalRef: blockModalRef } = useModal({
-    isOpen: showBlockModal,
-    onClose: () => {
-      setShowBlockModal(false);
-      setParceiroToBlock(null);
-    }
-  });
 
-  const { modalRef: unblockModalRef } = useModal({
-    isOpen: showUnblockModal,
-    onClose: () => {
-      setShowUnblockModal(false);
-      setParceiroToUnblock(null);
-    }
-  });
 
   // Filtrar parceiros
   const filteredParceiros = useMemo(() => {
@@ -200,13 +187,39 @@ export default function Parceiros() {
   // Motoristas e veículos do parceiro selecionado
   const motoristasParceiro = useMemo(() => {
     if (!selectedParceiro) return [];
-    return getMotoristasByParceiro(selectedParceiro.id);
-  }, [selectedParceiro, getMotoristasByParceiro]);
+    const motoristas = getMotoristasByParceiro(selectedParceiro.id);
+    
+    // Filtrar por nome do motorista
+    if (!motoristaSearchTerm) return motoristas;
+    
+    return motoristas.filter(motorista => 
+      motorista.nome?.toLowerCase().includes(motoristaSearchTerm.toLowerCase())
+    );
+  }, [selectedParceiro, getMotoristasByParceiro, motoristaSearchTerm]);
 
   const veiculosParceiro = useMemo(() => {
     if (!selectedParceiro) return [];
-    return getVeiculosByParceiro(selectedParceiro.id);
-  }, [selectedParceiro, getVeiculosByParceiro]);
+    const veiculos = getVeiculosByParceiro(selectedParceiro.id);
+    
+    // Filtrar por placa do veículo
+    if (!veiculoSearchTerm) return veiculos;
+    
+    return veiculos.filter(veiculo => {
+      const placaPrincipal = veiculo.tipo === 'Truck' ? veiculo.placa : veiculo.placaCavalo;
+      const placaCarreta = veiculo.placaCarreta || '';
+      const placaCarreta1 = veiculo.placaCarreta1 || '';
+      const placaCarreta2 = veiculo.placaCarreta2 || '';
+      const placaDolly = veiculo.placaDolly || '';
+      
+      const searchLower = veiculoSearchTerm.toLowerCase();
+      
+      return placaPrincipal?.toLowerCase().includes(searchLower) ||
+             placaCarreta?.toLowerCase().includes(searchLower) ||
+             placaCarreta1?.toLowerCase().includes(searchLower) ||
+             placaCarreta2?.toLowerCase().includes(searchLower) ||
+             placaDolly?.toLowerCase().includes(searchLower);
+    });
+  }, [selectedParceiro, getVeiculosByParceiro, veiculoSearchTerm]);
 
   // Estatísticas
   const stats = useMemo(() => {
@@ -294,44 +307,28 @@ export default function Parceiros() {
   };
 
   const handleBlockParceiro = (parceiro: any) => {
-    setParceiroToBlock(parceiro);
-    setShowBlockModal(true);
-  };
-
-  const confirmBlockParceiro = () => {
-    if (parceiroToBlock) {
-      const updatedParceiro = {
-        ...parceiroToBlock,
-        status: 'Bloqueado',
-        isActive: false
-      };
-      updateParceiro(parceiroToBlock.id, updatedParceiro);
-      setShowBlockModal(false);
-      setParceiroToBlock(null);
-      if (selectedParceiro?.id === parceiroToBlock.id) {
-        setSelectedParceiro(null);
-      }
+    const updatedParceiro = {
+      ...parceiro,
+      status: 'Bloqueado',
+      isActive: false
+    };
+    
+    updateParceiro(parceiro.id, updatedParceiro);
+    
+    if (selectedParceiro?.id === parceiro.id) {
+      setSelectedParceiro(null);
     }
   };
 
   const handleUnblockParceiro = (parceiro: any) => {
-    setParceiroToUnblock(parceiro);
-    setShowUnblockModal(true);
-  };
-
-  const confirmUnblockParceiro = () => {
-    if (parceiroToUnblock) {
-      const updatedParceiro = {
-        ...parceiroToUnblock,
-        status: 'Ativo',
-        isActive: true
-      };
-      updateParceiro(parceiroToUnblock.id, updatedParceiro);
-      setShowUnblockModal(false);
-      setParceiroToUnblock(null);
-      if (selectedParceiro?.id === parceiroToUnblock.id) {
-        setSelectedParceiro(updatedParceiro);
-      }
+    const updatedParceiro = {
+      ...parceiro,
+      status: 'Ativo',
+      isActive: true
+    };
+    updateParceiro(parceiro.id, updatedParceiro);
+    if (selectedParceiro?.id === parceiro.id) {
+      setSelectedParceiro(updatedParceiro);
     }
   };
 
@@ -1164,110 +1161,132 @@ export default function Parceiros() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Campo de busca por placa */}
+          <div className="flex items-center space-x-4">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar por placa..."
+                value={veiculoSearchTerm}
+                onChange={(e) => setVeiculoSearchTerm(e.target.value)}
+                className="input-field pl-10"
+              />
+            </div>
+            {veiculoSearchTerm && (
+              <button
+                onClick={() => setVeiculoSearchTerm('')}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Lista de veículos */}
+          <div className="space-y-3">
             {veiculosParceiro.map((veiculo) => {
               const motoristaVinculado = motoristasParceiro.find(m => m.id === veiculo.motoristaVinculado);
               
               return (
-                <div key={veiculo.id} className="card">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
-                        {veiculo.fabricante} {veiculo.modelo}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {veiculo.tipo} • {veiculo.ano}
-                      </p>
-                    </div>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      veiculo.tipo === 'Truck' 
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                        : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                    }`}>
-                      {veiculo.tipo}
-                    </span>
-                  </div>
+                <div key={veiculo.id} className="card p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    {/* Informações principais */}
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                      {/* Veículo */}
+                      <div className="flex items-center space-x-3">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          veiculo.tipo === 'Truck' 
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                            : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                        }`}>
+                          {veiculo.tipo}
+                        </span>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {veiculo.fabricante} {veiculo.modelo}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {veiculo.ano}
+                          </p>
+                        </div>
+                      </div>
 
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {veiculo.tipo === 'Truck' ? 'Placa:' : 'Placa Cavalo:'}
-                      </span>
-                      <span className="text-sm font-medium">
-                        {veiculo.tipo === 'Truck' ? veiculo.placa : veiculo.placaCavalo}
-                      </span>
-                    </div>
-                    
-                    {veiculo.tipo === 'Conjunto' && (
-                      <>
-                        {veiculo.quantidadeCarretas === 1 && (
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">Placa Carreta:</span>
-                            <span className="text-sm font-medium">{veiculo.placaCarreta}</span>
-                          </div>
-                        )}
-                        {veiculo.quantidadeCarretas === 2 && (
-                          <>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600 dark:text-gray-400">Carreta 1:</span>
-                              <span className="text-sm font-medium">{veiculo.placaCarreta1}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600 dark:text-gray-400">Carreta 2:</span>
-                              <span className="text-sm font-medium">{veiculo.placaCarreta2}</span>
-                            </div>
-                            {veiculo.possuiDolly && (
-                              <div className="flex justify-between">
-                                <span className="text-sm text-gray-600 dark:text-gray-400">Dolly:</span>
-                                <span className="text-sm font-medium">{veiculo.placaDolly}</span>
+                      {/* Placas */}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {veiculo.tipo === 'Truck' ? veiculo.placa : veiculo.placaCavalo}
+                        </p>
+                        {veiculo.tipo === 'Conjunto' && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {veiculo.quantidadeCarretas === 1 && veiculo.placaCarreta && (
+                              <span>Carreta: {veiculo.placaCarreta}</span>
+                            )}
+                            {veiculo.quantidadeCarretas === 2 && (
+                              <div>
+                                {veiculo.placaCarreta1 && <div>C1: {veiculo.placaCarreta1}</div>}
+                                {veiculo.placaCarreta2 && <div>C2: {veiculo.placaCarreta2}</div>}
+                                {veiculo.possuiDolly && veiculo.placaDolly && <div>Dolly: {veiculo.placaDolly}</div>}
                               </div>
                             )}
-                          </>
+                          </div>
                         )}
-                      </>
-                    )}
+                      </div>
 
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Chassi:</span>
-                      <span className="text-sm font-medium">{veiculo.chassi}</span>
+                      {/* Motorista */}
+                      <div>
+                        {motoristaVinculado ? (
+                          <div>
+                            <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                              {motoristaVinculado.nome}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Vinculado</p>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleVincular('veiculo', veiculo)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm font-medium"
+                          >
+                            🔗 Vincular Motorista
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Chassi */}
+                      <div className="hidden lg:block">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Chassi: {veiculo.chassi}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Motorista:</span>
-                      {!motoristaVinculado ? (
-                        <button
-                          onClick={() => handleVincular('veiculo', veiculo)}
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm"
-                        >
-                          🔗 Vincular
-                        </button>
-                      ) : (
-                        <span className="text-sm text-green-600 dark:text-green-400">
-                          {motoristaVinculado.nome}
-                        </span>
-                      )}
+                    {/* Ações */}
+                    <div className="flex items-center space-x-2 ml-4">
+                      <button
+                        onClick={() => handleEditVeiculo(veiculo)}
+                        className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title="Editar veículo"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteVeiculo(veiculo.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                        title="Excluir veículo"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
-                    
-                    {!motoristaVinculado && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Não vinculado</p>
-                    )}
-                  </div>
-
-                  <div className="flex space-x-2 mt-4">
-                    <button
-                      onClick={() => handleEditVeiculo(veiculo)}
-                      className="btn-secondary flex-1 text-sm"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleDeleteVeiculo(veiculo.id)}
-                      className="btn-danger flex-1 text-sm"
-                    >
-                      Excluir
-                    </button>
                   </div>
                 </div>
               );
@@ -1294,65 +1313,118 @@ export default function Parceiros() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Campo de busca por nome */}
+          <div className="flex items-center space-x-4">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar por nome..."
+                value={motoristaSearchTerm}
+                onChange={(e) => setMotoristaSearchTerm(e.target.value)}
+                className="input-field pl-10"
+              />
+            </div>
+            {motoristaSearchTerm && (
+              <button
+                onClick={() => setMotoristaSearchTerm('')}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Lista de motoristas */}
+          <div className="space-y-3">
             {motoristasParceiro.map((motorista) => {
               const veiculoVinculado = veiculosParceiro.find(v => v.id === motorista.veiculoVinculado);
               
               return (
-                <div key={motorista.id} className="card">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
-                        {motorista.nome}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        CNH: {motorista.cnh}
-                      </p>
-                    </div>
-                  </div>
+                <div key={motorista.id} className="card p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    {/* Informações principais */}
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                      {/* Nome */}
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {motorista.nome}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Motorista
+                        </p>
+                      </div>
 
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">CPF:</span>
-                      <span className="text-sm font-medium">{formatDocument(motorista.cpf, 'PF')}</span>
-                    </div>
-                  </div>
+                      {/* CNH */}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          CNH: {motorista.cnh}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          CPF: {formatDocument(motorista.cpf, 'PF')}
+                        </p>
+                      </div>
 
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Veículo:</span>
-                      {!veiculoVinculado ? (
-                        <button
-                          onClick={() => handleVincular('motorista', motorista)}
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm"
-                        >
-                          🔗 Vincular
-                        </button>
-                      ) : (
-                        <span className="text-sm text-green-600 dark:text-green-400">
-                          {veiculoVinculado.fabricante} {veiculoVinculado.modelo}
+                      {/* Veículo */}
+                      <div>
+                        {veiculoVinculado ? (
+                          <div>
+                            <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                              {veiculoVinculado.fabricante} {veiculoVinculado.modelo}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {veiculoVinculado.tipo === 'Truck' ? veiculoVinculado.placa : veiculoVinculado.placaCavalo}
+                            </p>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleVincular('motorista', motorista)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm font-medium"
+                          >
+                            🔗 Vincular Veículo
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Status */}
+                      <div className="hidden lg:block">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          veiculoVinculado 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                        }`}>
+                          {veiculoVinculado ? 'Vinculado' : 'Disponível'}
                         </span>
-                      )}
+                      </div>
                     </div>
-                    
-                    {!veiculoVinculado && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Não vinculado</p>
-                    )}
-                  </div>
 
-                  <div className="flex space-x-2 mt-4">
-                    <button
-                      onClick={() => handleEditMotorista(motorista)}
-                      className="btn-secondary flex-1 text-sm"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleDeleteMotorista(motorista.id)}
-                      className="btn-danger flex-1 text-sm"
-                    >
-                      Excluir
-                    </button>
+                    {/* Ações */}
+                    <div className="flex items-center space-x-2 ml-4">
+                      <button
+                        onClick={() => handleEditMotorista(motorista)}
+                        className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title="Editar motorista"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMotorista(motorista.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                        title="Excluir motorista"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -1815,99 +1887,7 @@ export default function Parceiros() {
          </div>
        )}
 
-       {/* Modal de Bloqueio */}
-       {showBlockModal && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
-           <div ref={blockModalRef} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
-             <div className="p-6">
-               <div className="flex items-center justify-between mb-4">
-                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                   Bloquear Parceiro
-                 </h3>
-                 <button
-                   onClick={() => setShowBlockModal(false)}
-                   className="text-gray-400 hover:text-gray-600"
-                 >
-                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                   </svg>
-                 </button>
-               </div>
 
-               <div className="mb-6">
-                 <p className="text-gray-700 dark:text-gray-300">
-                   Tem certeza que deseja bloquear o parceiro <strong>{parceiroToBlock?.nome}</strong>?
-                 </p>
-                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                   O parceiro será marcado como bloqueado e não aparecerá nas listagens principais.
-                 </p>
-               </div>
-
-               <div className="flex space-x-4">
-                 <button
-                   onClick={() => setShowBlockModal(false)}
-                   className="btn-secondary flex-1"
-                 >
-                   Cancelar
-                 </button>
-                 <button
-                   onClick={confirmBlockParceiro}
-                   className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg flex-1"
-                 >
-                   Bloquear
-                 </button>
-               </div>
-             </div>
-           </div>
-         </div>
-       )}
-
-       {/* Modal de Desbloqueio */}
-       {showUnblockModal && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
-           <div ref={unblockModalRef} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
-             <div className="p-6">
-               <div className="flex items-center justify-between mb-4">
-                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                   Desbloquear Parceiro
-                 </h3>
-                 <button
-                   onClick={() => setShowUnblockModal(false)}
-                   className="text-gray-400 hover:text-gray-600"
-                 >
-                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                   </svg>
-                 </button>
-               </div>
-
-               <div className="mb-6">
-                 <p className="text-gray-700 dark:text-gray-300">
-                   Tem certeza que deseja desbloquear o parceiro <strong>{parceiroToUnblock?.nome}</strong>?
-                 </p>
-                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                   O parceiro será marcado como ativo e voltará a aparecer nas listagens principais.
-                 </p>
-               </div>
-
-               <div className="flex space-x-4">
-                 <button
-                   onClick={() => setShowUnblockModal(false)}
-                   className="btn-secondary flex-1"
-                 >
-                   Cancelar
-                 </button>
-                 <button
-                   onClick={confirmUnblockParceiro}
-                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex-1"
-                 >
-                   Desbloquear
-                 </button>
-               </div>
-             </div>
-           </div>
-         </div>
-       )}
      </div>
    );
  }

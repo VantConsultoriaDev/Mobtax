@@ -478,11 +478,10 @@ const Usuarios: React.FC = () => {
       {/* Modal de Formulário */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div ref={modalRef} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg mx-4">
-            {/* Header */}
-            <div className="bg-blue-600 text-white px-6 py-4 rounded-t-lg">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold">
+          <div ref={modalRef} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {editingId ? 'Editar Usuário' : 'Novo Usuário'}
                 </h3>
                 <button
@@ -491,15 +490,12 @@ const Usuarios: React.FC = () => {
                     setEditingId(null)
                     resetForm()
                   }}
-                  className="text-white hover:text-gray-200 transition-colors"
+                  className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
-            </div>
 
-            {/* Form Content */}
-            <div className="p-6">
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Nome de Usuário */}
                 <div>
@@ -512,7 +508,7 @@ const Usuarios: React.FC = () => {
                       type="text"
                       value={userForm.username}
                       onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       placeholder="Digite o nome de usuário"
                       required
                     />
@@ -530,7 +526,7 @@ const Usuarios: React.FC = () => {
                       type="email"
                       value={userForm.email}
                       onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       placeholder="Digite o email"
                       required
                     />
@@ -547,7 +543,7 @@ const Usuarios: React.FC = () => {
                     <select
                       value={userForm.role}
                       onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none"
                       required
                     >
                       {getAvailableRoles().map(role => {
@@ -575,7 +571,7 @@ const Usuarios: React.FC = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={userForm.password}
                       onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                      className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       placeholder="Digite a senha"
                       required={!editingId}
                     />
@@ -600,7 +596,7 @@ const Usuarios: React.FC = () => {
                         type={showPassword ? 'text' : 'password'}
                         value={userForm.confirmPassword}
                         onChange={(e) => setUserForm({ ...userForm, confirmPassword: e.target.value })}
-                        className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         placeholder="Confirme a senha"
                         required={!!userForm.password}
                       />
@@ -615,7 +611,7 @@ const Usuarios: React.FC = () => {
                     id="isActive"
                     checked={userForm.isActive}
                     onChange={(e) => setUserForm({ ...userForm, isActive: e.target.checked })}
-                    className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                   />
                   <label htmlFor="isActive" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
                     <UserCheck className="h-5 w-5 mr-2 text-green-500" />
@@ -632,13 +628,13 @@ const Usuarios: React.FC = () => {
                       setEditingId(null)
                       resetForm()
                     }}
-                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 transition-colors font-medium"
+                    className="btn-secondary flex-1"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-colors font-medium"
+                    className="btn-primary flex-1"
                   >
                     {editingId ? 'Atualizar Usuário' : 'Criar Usuário'}
                   </button>

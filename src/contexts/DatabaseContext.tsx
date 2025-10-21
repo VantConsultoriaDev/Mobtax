@@ -68,17 +68,14 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({ children }) 
       {
         id: 'parceiro-1',
         nome: 'Transportadora ABC Ltda',
-        tipo: 'juridica',
+        tipo: 'PJ',
         documento: '12.345.678/0001-90',
         email: 'contato@transportadoraabc.com',
         telefone: '(11) 3456-7890',
-        endereco: {
-          cep: '01234-567',
-          logradouro: 'Rua das Flores, 123',
-          bairro: 'Centro',
-          cidade: 'São Paulo',
-          estado: 'SP'
-        },
+        endereco: 'Rua das Flores, 123',
+        cidade: 'São Paulo',
+        estado: 'SP',
+        cep: '01234-567',
         isActive: true,
         createdAt: new Date('2024-01-10'),
         updatedAt: new Date('2024-01-10')
@@ -86,17 +83,14 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({ children }) 
       {
         id: 'parceiro-2',
         nome: 'Carlos Oliveira',
-        tipo: 'fisica',
+        tipo: 'PF',
         documento: '123.456.789-01',
         email: 'carlos@email.com',
         telefone: '(11) 9876-5432',
-        endereco: {
-          cep: '04567-890',
-          logradouro: 'Av. Paulista, 456',
-          bairro: 'Bela Vista',
-          cidade: 'São Paulo',
-          estado: 'SP'
-        },
+        endereco: 'Av. Paulista, 456',
+        cidade: 'São Paulo',
+        estado: 'SP',
+        cep: '04567-890',
         isActive: true,
         createdAt: new Date('2024-01-20'),
         updatedAt: new Date('2024-01-20')

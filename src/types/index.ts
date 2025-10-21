@@ -63,10 +63,21 @@ export interface Veiculo {
   id: string
   parceiroId: string
   placa?: string
+  placaCavalo?: string
+  placaCarreta?: string
+  placaCarreta1?: string
+  placaCarreta2?: string
+  placaDolly?: string
   modelo?: string
+  fabricante?: string
   ano?: number
   capacidade?: number
+  chassis?: string
+  carroceria?: string
   tipo: string
+  quantidadeCarretas?: number
+  possuiDolly?: boolean
+  motoristaVinculado?: string
   isActive?: boolean
   createdAt: Date
   updatedAt: Date

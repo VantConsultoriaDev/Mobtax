@@ -11,25 +11,25 @@ import {
   Sun, 
   Moon,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Zap
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true) // Inicia colapsado
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const [isHovering, setIsHovering] = useState(false)
   const { user, logout } = useAuth()
   const { isDark, toggleTheme } = useTheme()
   const location = useLocation()
 
-  // Auto-collapse quando não está em hover
   useEffect(() => {
     if (!isHovering) {
       const timer = setTimeout(() => {
         setSidebarCollapsed(true)
-      }, 300) // Delay para evitar flickering
+      }, 300)
       return () => clearTimeout(timer)
     }
   }, [isHovering])
@@ -44,8 +44,8 @@ const Layout: React.FC = () => {
 
   const hasPermission = (permission: string) => {
     if (!user) return false
-    if (user.type === 'admin') return true
-    return user.permissions[permission as keyof typeof user.permissions] !== 'none'
+    if (user.role === 'admin') return true
+    return user.permissions?.[permission as keyof typeof user.permissions] !== 'none'
   }
 
   const filteredNavigation = navigation.filter(item => hasPermission(item.permission))
@@ -55,56 +55,57 @@ const Layout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-100 dark:from-slate-900 dark:via-purple-900 dark:to-violet-900">
-      {/* Mobile sidebar */}
-      <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-md" onClick={() => setSidebarOpen(false)} />
-        <div className="fixed inset-y-0 left-0 flex w-80 flex-col bg-gradient-to-b from-white/95 via-purple-50/95 to-violet-100/95 dark:from-slate-900/95 dark:via-purple-900/95 dark:to-violet-900/95 backdrop-blur-2xl shadow-2xl border-r border-purple-200/50 dark:border-purple-700/50">
-          <div className="flex h-20 items-center justify-between px-6 border-b border-purple-200/50 dark:border-purple-700/50">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/25">
-                <Truck className="h-7 w-7 text-white" />
-              </div>
-              <div className="text-2xl font-bold bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
-                MOBTAX
-              </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 lg:hidden bg-black/20 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-transform duration-300 lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex h-20 items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
+              <Truck className="h-6 w-6 text-white" />
             </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="p-2 rounded-xl text-purple-400 hover:text-purple-600 hover:bg-purple-100/50 dark:hover:text-purple-300 dark:hover:bg-purple-800/50 transition-all duration-200"
-            >
-              <X className="h-6 w-6" />
-            </button>
+            <span className="text-lg font-bold text-slate-900 dark:text-white">MOBTAX</span>
           </div>
-          <nav className="flex-1 space-y-3 px-4 py-6">
-            {filteredNavigation.map((item) => {
-              const isActive = location.pathname === item.href
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`group flex items-center justify-between px-5 py-4 text-sm font-medium rounded-2xl transition-all duration-300 transform hover:scale-105 ${
-                    isActive
-                      ? 'bg-gradient-to-r from-violet-500 via-purple-600 to-fuchsia-600 text-white shadow-xl shadow-purple-500/30 border border-purple-400/20'
-                      : 'text-purple-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-violet-50 hover:text-purple-900 hover:shadow-lg dark:text-purple-300 dark:hover:bg-gradient-to-r dark:hover:from-purple-900/50 dark:hover:to-violet-900/50 dark:hover:text-white border border-transparent hover:border-purple-200/50 dark:hover:border-purple-700/50'
-                  }`}
-                >
-                  <div className="flex items-center">
-                    <item.icon className="mr-4 h-5 w-5" />
-                    {item.name}
-                  </div>
-                  {isActive && <ChevronRight className="h-4 w-4" />}
-                </Link>
-              )
-            })}
-          </nav>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="btn-ghost p-2"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
+        <nav className="space-y-1 p-4">
+          {filteredNavigation.map((item) => {
+            const isActive = location.pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isActive
+                    ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                    : 'text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <item.icon className="h-5 w-5 flex-shrink-0" />
+                <span>{item.name}</span>
+                {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+              </Link>
+            )
+          })}
+        </nav>
       </div>
 
-      {/* Desktop sidebar */}
+      {/* Desktop Sidebar */}
       <div 
-        className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col transition-all duration-300 ${sidebarCollapsed && !isHovering ? 'lg:w-20' : 'lg:w-80'} z-30`}
+        className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col transition-all duration-300 ${sidebarCollapsed && !isHovering ? 'lg:w-20' : 'lg:w-72'} z-30`}
         onMouseEnter={() => {
           setIsHovering(true)
           setSidebarCollapsed(false)
@@ -113,18 +114,21 @@ const Layout: React.FC = () => {
           setIsHovering(false)
         }}
       >
-        <div className="flex flex-col flex-grow bg-gradient-to-b from-white/95 via-purple-50/95 to-violet-100/95 dark:from-slate-900/95 dark:via-purple-900/95 dark:to-violet-900/95 backdrop-blur-2xl border-r border-purple-200/50 dark:border-purple-700/50 shadow-2xl">
-          <div className="flex h-20 items-center px-6 border-b border-purple-200/50 dark:border-purple-700/50">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/25">
-                <Truck className="h-7 w-7 text-white" />
+        <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300">
+          {/* Logo */}
+          <div className="h-20 flex items-center px-6 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-3 w-full">
+              <div className="h-10 w-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Truck className="h-6 w-6 text-white" />
               </div>
-              <div className={`text-2xl font-bold bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent transition-all duration-300 ${sidebarCollapsed && !isHovering ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
+              <span className={`text-lg font-bold text-slate-900 dark:text-white transition-all duration-300 whitespace-nowrap ${sidebarCollapsed && !isHovering ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
                 MOBTAX
-              </div>
+              </span>
             </div>
           </div>
-          <nav className="flex-1 space-y-3 px-4 py-6">
+
+          {/* Navigation */}
+          <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
             {filteredNavigation.map((item) => {
               const isActive = location.pathname === item.href
               const isCollapsed = sidebarCollapsed && !isHovering
@@ -133,77 +137,112 @@ const Layout: React.FC = () => {
                   key={item.name}
                   to={item.href}
                   title={isCollapsed ? item.name : undefined}
-                  className={`group flex items-center ${isCollapsed ? 'justify-center px-3' : 'justify-between px-5'} py-4 text-sm font-medium rounded-2xl transition-all duration-300 transform hover:scale-105 ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive
-                      ? 'bg-gradient-to-r from-violet-500 via-purple-600 to-fuchsia-600 text-white shadow-xl shadow-purple-500/30 border border-purple-400/20'
-                      : 'text-purple-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-violet-50 hover:text-purple-900 hover:shadow-lg dark:text-purple-300 dark:hover:bg-gradient-to-r dark:hover:from-purple-900/50 dark:hover:to-violet-900/50 dark:hover:text-white border border-transparent hover:border-purple-200/50 dark:hover:border-purple-700/50'
+                      ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                      : 'text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <div className="flex items-center">
-                    <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-4'}`} />
-                    <span className={`transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
-                      {item.name}
-                    </span>
-                  </div>
-                  {!isCollapsed && isActive && <ChevronRight className="h-4 w-4" />}
+                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                  <span className={`transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
+                    {item.name}
+                  </span>
+                  {!isCollapsed && isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
                 </Link>
               )
             })}
           </nav>
+
+          {/* Footer - User Info (Desktop only) */}
+          <div className={`border-t border-slate-200 dark:border-slate-800 p-4 transition-all duration-300 ${sidebarCollapsed && !isHovering ? 'flex justify-center' : ''}`}>
+            <div className={`${sidebarCollapsed && !isHovering ? 'flex justify-center' : 'space-y-3'}`}>
+              {!sidebarCollapsed && <div className="px-4 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs">
+                <p className="font-semibold text-slate-900 dark:text-white truncate">{user?.username}</p>
+                <p className="text-slate-500 dark:text-slate-400 capitalize">{user?.role}</p>
+              </div>}
+              <button
+                onClick={handleLogout}
+                className={`btn-ghost w-full justify-center ${!sidebarCollapsed && !isHovering ? '' : ''}`}
+              >
+                <LogOut className="h-5 w-5" />
+                {!sidebarCollapsed && <span className="ml-2">Sair</span>}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Main content */}
-      <div className={`transition-all duration-300 ${sidebarCollapsed && !isHovering ? 'lg:pl-20' : 'lg:pl-80'}`}>
-        {/* Top header */}
-        <div className="sticky top-0 z-40 flex h-20 shrink-0 items-center gap-x-4 border-b border-purple-200/50 dark:border-purple-700/50 bg-gradient-to-r from-white/90 via-purple-50/90 to-violet-100/90 dark:from-slate-900/90 dark:via-purple-900/90 dark:to-violet-900/90 backdrop-blur-2xl px-4 shadow-xl sm:gap-x-6 sm:px-6 lg:px-8">
-          {/* Mobile menu button - only visible on mobile */}
+      {/* Main Content */}
+      <div className={`transition-all duration-300 ${sidebarCollapsed && !isHovering ? 'lg:pl-20' : 'lg:pl-72'}`}>
+        {/* Top Header */}
+        <div className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
+          {/* Mobile Menu */}
           <button
             type="button"
-            className="p-2.5 rounded-xl text-purple-700 dark:text-purple-300 hover:bg-purple-100/50 dark:hover:bg-purple-800/50 transition-all duration-200 lg:hidden"
+            className="btn-ghost p-2 lg:hidden"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
           </button>
 
-          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-            <div className="flex flex-1"></div>
-            <div className="flex items-center gap-x-3 lg:gap-x-4">
-              {/* Theme toggle */}
-              <button
-                onClick={toggleTheme}
-                className="p-2.5 rounded-xl text-purple-500 hover:text-purple-700 hover:bg-purple-100/50 dark:text-purple-400 dark:hover:text-purple-200 dark:hover:bg-purple-800/50 transition-all duration-200 shadow-md hover:shadow-lg"
-                title={isDark ? 'Modo claro' : 'Modo escuro'}
-              >
-                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </button>
+          {/* Header Title / Breadcrumb (Future enhancement) */}
+          <div className="flex-1 flex items-center gap-2 text-sm">
+            <span className="text-slate-500 dark:text-slate-400">Dashboard</span>
+          </div>
 
-              {/* User info */}
-              <div className="flex items-center gap-x-3 pl-3 border-l border-purple-200 dark:border-purple-700">
-                <div className="flex flex-col items-end">
-                  <div className="text-sm font-semibold text-purple-900 dark:text-purple-100">
-                    {user?.username}
-                  </div>
-                  <div className="text-xs text-purple-500 dark:text-purple-400 capitalize">
-                    {user?.type}
-                  </div>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="p-2.5 rounded-xl text-purple-500 hover:text-red-600 hover:bg-red-50 dark:text-purple-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-all duration-200 shadow-md hover:shadow-lg"
-                  title="Sair"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
+          {/* Right Actions */}
+          <div className="flex items-center gap-2 lg:gap-4">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="btn-ghost p-2"
+              aria-label="Toggle theme"
+              title={isDark ? 'Modo claro' : 'Modo escuro'}
+            >
+              {isDark ? (
+                <Sun className="h-5 w-5 text-amber-500" />
+              ) : (
+                <Moon className="h-5 w-5 text-slate-600" />
+              )}
+            </button>
+
+            {/* Divider */}
+            <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block" />
+
+            {/* User Menu & Logout (Desktop) */}
+            <div className="hidden sm:flex items-center gap-3">
+              <div className="flex flex-col items-end text-right">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {user?.username}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
+                  {user?.role}
+                </p>
               </div>
+              <button
+                onClick={handleLogout}
+                className="btn-ghost p-2"
+                title="Sair"
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
             </div>
+
+            {/* User Menu (Mobile) */}
+            <button
+              onClick={handleLogout}
+              className="btn-ghost p-2 sm:hidden"
+              title="Sair"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
           </div>
         </div>
 
-        {/* Page content */}
-        <main className="py-8">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="fade-in">
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6 md:p-8">
+            <div className="mx-auto max-w-7xl">
               <Outlet />
             </div>
           </div>

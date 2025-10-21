@@ -4,10 +4,10 @@ import { useModal } from '../hooks/useModal';
 import { format, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatCurrency, parseCurrency } from '../utils/formatters';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
+import {
+  Plus,
+  Search,
+  Filter,
   Package,
   Truck,
   CheckCircle,
@@ -18,7 +18,7 @@ import {
   Trash2,
   X,
   Eye,
-  MoreVertical
+  RefreshCw
 } from 'lucide-react';
 
 const Cargas: React.FC = () => {
@@ -444,7 +444,7 @@ const Cargas: React.FC = () => {
                             className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                             title="Alterar status"
                           >
-                            <MoreVertical className="h-4 w-4" />
+                            <RefreshCw className="h-4 w-4" />
                           </button>
                           {showStatusDropdown === carga.id && (
                             <div className="absolute right-0 mt-2 w-44 z-50 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5">

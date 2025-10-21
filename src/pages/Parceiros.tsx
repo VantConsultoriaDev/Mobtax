@@ -817,18 +817,29 @@ export default function Parceiros() {
                     </select>
                   </div>
 
-                  {/* Checkbox "É Motorista" apenas para Pessoa Física - logo após o campo Tipo */}
+                  {/* Switch "É Motorista" apenas para Pessoa Física - logo após o campo Tipo */}
                   {parceiroForm.tipo === 'PF' && (
                     <div className="flex items-center space-x-4">
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={parceiroForm.isMotorista}
-                          onChange={(e) => setParceiroForm({ ...parceiroForm, isMotorista: e.target.checked })}
-                          className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                        />
-                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">É Motorista</span>
-                      </label>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          É Motorista
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setParceiroForm({ ...parceiroForm, isMotorista: !parceiroForm.isMotorista })}
+                          className={`ml-3 relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
+                            parceiroForm.isMotorista
+                              ? 'bg-green-500'
+                              : 'bg-gray-300 dark:bg-gray-600'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              parceiroForm.isMotorista ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -1838,7 +1849,7 @@ export default function Parceiros() {
                          ))}
                        {veiculosParceiro.filter(v => !v.motoristaVinculado).length === 0 && (
                          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                           Nenhum veículo disponível para vinculação
+                           Nenhum veículo dispon��vel para vinculação
                          </p>
                        )}
                      </>
@@ -1860,7 +1871,7 @@ export default function Parceiros() {
                          ))}
                        {motoristasParceiro.filter(m => !m.veiculoVinculado).length === 0 && (
                          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                           Nenhum motorista disponível para vinculação
+                           Nenhum motorista disponível para vincula��ão
                          </p>
                        )}
                      </>

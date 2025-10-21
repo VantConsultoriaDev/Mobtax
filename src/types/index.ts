@@ -18,16 +18,29 @@ export interface User {
   updatedAt: Date
 }
 
+export interface Endereco {
+  cep: string
+  logradouro: string
+  bairro: string
+  cidade: string
+  estado: string
+}
+
 export interface Parceiro {
   id: string
   tipo: 'PF' | 'PJ'
   nome?: string
-  cpf?: string
+  documento?: string
   cnh?: string
-  cnpj?: string
-  razaoSocial?: string
-  chavePix: string
+  email?: string
+  telefone?: string
+  endereco?: string
+  cidade?: string
+  estado?: string
+  cep?: string
+  observacoes?: string
   isMotorista?: boolean
+  isActive?: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -38,7 +51,11 @@ export interface Motorista {
   nome: string
   cpf: string
   cnh: string
+  categoriaCnh?: string
+  validadeCnh?: Date
+  telefone?: string
   veiculoVinculado?: string
+  isActive?: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -46,62 +63,57 @@ export interface Motorista {
 export interface Veiculo {
   id: string
   parceiroId: string
-  tipo: 'truck' | 'conjunto'
   placa?: string
   placaCavalo?: string
   placaCarreta?: string
+  placaCarreta1?: string
   placaCarreta2?: string
   placaDolly?: string
-  quantidadeCarretas?: 1 | 2
-  possuiDolly?: boolean
-  fabricante: string
-  modelo: string
-  ano: number
-  chassi: string
+  modelo?: string
+  fabricante?: string
+  ano?: number
+  capacidade?: number
+  chassis?: string
   carroceria?: string
+  tipo: string
+  quantidadeCarretas?: number
+  possuiDolly?: boolean
   motoristaVinculado?: string
+  isActive?: boolean
   createdAt: Date
   updatedAt: Date
 }
 
 export interface MovimentacaoFinanceira {
   id: string
-  descricao: string
-  valor: number
-  dataVencimento: Date
-  status: 'a_vencer' | 'vencido' | 'pago'
   tipo: 'receita' | 'despesa'
-  frequencia: 'pontual' | 'recorrente'
+  valor: number
+  descricao: string
+  categoria?: string
+  data: Date
+  status?: 'pendente' | 'pago' | 'cancelado'
   parceiroId?: string
-  observacao?: string
-  anexo?: string
-  recorrencia?: {
-    tipo: 'indeterminado' | 'quantidade'
-    meses?: number
-    proximaData?: Date
-  }
   cargaId?: string
+  isPago?: boolean
+  observacoes?: string
   createdAt: Date
   updatedAt: Date
 }
 
 export interface Carga {
   id: string
-  cliente: string
-  crt: string
-  dataCarregamento: Date
-  previsaoEntrega: Date
+  descricao: string
   origem: string
   destino: string
-  equipamento: string
   peso: number
   valor: number
-  tipoPagamento: 'adiantamento_70' | 'adiantamento_80' | 'integral'
-  motoristaId?: string
+  dataColeta?: Date
+  dataEntrega?: Date
+  status: 'entregue' | 'em_transito' | 'a_coletar' | 'armazenada' | 'cancelada'
   parceiroId?: string
-  placaCavalo?: string
-  placaCarreta?: string
-  status: 'ativa' | 'finalizada'
+  motoristaId?: string
+  veiculoId?: string
+  crt?: string
   createdAt: Date
   updatedAt: Date
 }

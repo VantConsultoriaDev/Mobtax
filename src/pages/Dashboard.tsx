@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
-import { useDatabase } from '../contexts/DatabaseContext';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { formatCurrency } from '../utils/formatters';
+import React, { useMemo } from 'react'
+import { useDatabase } from '../contexts/DatabaseContext'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { formatCurrency } from '../utils/formatters'
 import { 
   Package, 
   Truck, 
@@ -10,23 +10,22 @@ import {
   Clock, 
   AlertTriangle,
   DollarSign,
-  TrendingUp,
-  Users
-} from 'lucide-react';
+  ArrowUpRight,
+  ArrowDownRight
+} from 'lucide-react'
 
 export default function Dashboard() {
-  const { cargas, parceiros } = useDatabase();
+  const { cargas, parceiros } = useDatabase()
 
-  // Estatísticas de cargas por status
   const cargoStats = useMemo(() => {
-    const aColeta = cargas.filter(carga => carga.status === 'a_coletar').length;
-    const emTransito = cargas.filter(carga => carga.status === 'em_transito').length;
-    const armazenada = cargas.filter(carga => carga.status === 'armazenada').length;
-    const entregue = cargas.filter(carga => carga.status === 'entregue').length;
-    const cancelada = cargas.filter(carga => carga.status === 'cancelada').length;
+    const aColeta = cargas.filter(carga => carga.status === 'a_coletar').length
+    const emTransito = cargas.filter(carga => carga.status === 'em_transito').length
+    const armazenada = cargas.filter(carga => carga.status === 'armazenada').length
+    const entregue = cargas.filter(carga => carga.status === 'entregue').length
+    const cancelada = cargas.filter(carga => carga.status === 'cancelada').length
     
-    const total = cargas.length;
-    const valorTotal = cargas.reduce((sum, carga) => sum + (carga.valor || 0), 0);
+    const total = cargas.length
+    const valorTotal = cargas.reduce((sum, carga) => sum + (carga.valor || 0), 0)
     
     return { 
       aColeta, 
@@ -36,173 +35,194 @@ export default function Dashboard() {
       cancelada, 
       total,
       valorTotal
-    };
-  }, [cargas]);
+    }
+  }, [cargas])
 
   const statusConfig = {
-    a_coletar: { label: 'À Coletar', color: 'text-orange-600', bgColor: 'bg-orange-100', icon: Clock },
-    em_transito: { label: 'Em Trânsito', color: 'text-blue-600', bgColor: 'bg-blue-100', icon: Truck },
-    armazenada: { label: 'Armazenada', color: 'text-purple-600', bgColor: 'bg-purple-100', icon: Package },
-    entregue: { label: 'Entregue', color: 'text-green-600', bgColor: 'bg-green-100', icon: CheckCircle },
-    cancelada: { label: 'Cancelada', color: 'text-red-600', bgColor: 'bg-red-100', icon: AlertTriangle }
-  };
+    a_coletar: { label: 'À Coletar', icon: Clock, color: 'bg-amber-50', iconColor: 'text-amber-600' },
+    em_transito: { label: 'Em Trânsito', icon: Truck, color: 'bg-blue-50', iconColor: 'text-blue-600' },
+    armazenada: { label: 'Armazenada', icon: Package, color: 'bg-purple-50', iconColor: 'text-purple-600' },
+    entregue: { label: 'Entregue', icon: CheckCircle, color: 'bg-emerald-50', iconColor: 'text-emerald-600' },
+    cancelada: { label: 'Cancelada', icon: AlertTriangle, color: 'bg-red-50', iconColor: 'text-red-600' }
+  }
 
-  // Cargas recentes (últimas 5)
   const cargasRecentes = useMemo(() => {
     return cargas
-      .sort((a, b) => new Date(b.dataColeta).getTime() - new Date(a.dataColeta).getTime())
-      .slice(0, 5);
-  }, [cargas]);
+      .sort((a, b) => new Date(b.dataColeta || 0).getTime() - new Date(a.dataColeta || 0).getTime())
+      .slice(0, 5)
+  }, [cargas])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Início</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Visão geral do sistema
+      <div className="space-y-1">
+        <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-50">
+          Dashboard
+        </h1>
+        <p className="text-slate-600 dark:text-slate-400">
+          Visão geral do seu sistema de gestão
         </p>
       </div>
 
-      {/* Cards de Estatísticas */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total de Cargas */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+        <div className="stat-card hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1 flex-1">
+              <p className="stat-label">Total de Cargas</p>
+              <p className="stat-value">{cargoStats.total}</p>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total de Cargas</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{cargoStats.total}</p>
+            <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+              <Package className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
             </div>
+          </div>
+          <div className="pt-4 flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+            <ArrowUpRight className="h-4 w-4" />
+            <span>Aumentando</span>
           </div>
         </div>
 
         {/* Em Trânsito */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-              <Truck className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+        <div className="stat-card hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1 flex-1">
+              <p className="stat-label">Em Trânsito</p>
+              <p className="stat-value">{cargoStats.emTransito}</p>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Em Trânsito</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{cargoStats.emTransito}</p>
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <Truck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
+          <p className="stat-change text-blue-600 dark:text-blue-400 pt-4">
+            Operando normalmente
+          </p>
         </div>
 
         {/* Entregues */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-              <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+        <div className="stat-card hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1 flex-1">
+              <p className="stat-label">Entregues</p>
+              <p className="stat-value">{cargoStats.entregue}</p>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Entregues</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{cargoStats.entregue}</p>
+            <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+              <CheckCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
             </div>
+          </div>
+          <div className="pt-4 flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+            <ArrowUpRight className="h-4 w-4" />
+            <span>+12% esta semana</span>
           </div>
         </div>
 
         {/* Valor Total */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+        <div className="stat-card hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1 flex-1">
+              <p className="stat-label">Valor Total</p>
+              <p className="stat-value text-lg">{formatCurrency(cargoStats.valorTotal)}</p>
+            </div>
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Valor Total</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(cargoStats.valorTotal)}</p>
-            </div>
+          </div>
+          <p className="stat-change text-slate-600 dark:text-slate-400 pt-4">
+            Em movimentação
+          </p>
+        </div>
+      </div>
+
+      {/* Status Distribution */}
+      <div>
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50 mb-4">
+          Distribuição de Status
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {Object.entries(statusConfig).map(([status, config]) => {
+            const count = cargoStats[status as keyof typeof cargoStats] as number || 0
+            const Icon = config.icon
+            
+            return (
+              <div key={status} className={`card p-4 text-center hover:shadow-lg transition-all ${config.color}`}>
+                <div className={`w-12 h-12 ${config.color} rounded-lg flex items-center justify-center mx-auto mb-3`}>
+                  <Icon className={`w-6 h-6 ${config.iconColor}`} />
+                </div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{count}</p>
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-1">
+                  {config.label}
+                </p>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Recent Shipments */}
+      <div>
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50 mb-4">
+          Cargas Recentes
+        </h2>
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="table-header">
+                  <th className="table-cell text-left">CRT</th>
+                  <th className="table-cell text-left">Origem</th>
+                  <th className="table-cell text-left">Destino</th>
+                  <th className="table-cell text-left">Data de Coleta</th>
+                  <th className="table-cell text-left">Valor</th>
+                  <th className="table-cell text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                {cargasRecentes.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="table-cell text-center text-slate-500 dark:text-slate-400 py-8">
+                      <div className="flex flex-col items-center gap-2">
+                        <Package className="h-8 w-8 opacity-40" />
+                        <p>Nenhuma carga cadastrada</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  cargasRecentes.map((carga) => (
+                    <tr key={carga.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                      <td className="table-cell font-medium text-slate-900 dark:text-white">
+                        {carga.crt || '-'}
+                      </td>
+                      <td className="table-cell text-slate-700 dark:text-slate-300">
+                        {carga.origem}
+                      </td>
+                      <td className="table-cell text-slate-700 dark:text-slate-300">
+                        {carga.destino}
+                      </td>
+                      <td className="table-cell text-slate-700 dark:text-slate-300 text-sm">
+                        {carga.dataColeta ? format(new Date(carga.dataColeta), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
+                      </td>
+                      <td className="table-cell font-medium text-slate-900 dark:text-white">
+                        {formatCurrency(carga.valor || 0)}
+                      </td>
+                      <td className="table-cell">
+                        <span className={`badge ${
+                          carga.status === 'entregue' ? 'badge-success' :
+                          carga.status === 'em_transito' ? 'badge-info' :
+                          carga.status === 'armazenada' ? 'badge-warning' :
+                          carga.status === 'cancelada' ? 'badge-danger' :
+                          'badge-gray'
+                        }`}>
+                          {statusConfig[carga.status as keyof typeof statusConfig]?.label || 'Desconhecido'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-
-      {/* Cards de Status */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {Object.entries(statusConfig).map(([status, config]) => {
-          const count = cargoStats[status as keyof typeof cargoStats] as number || 0;
-          const Icon = config.icon;
-          
-          return (
-            <div key={status} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
-              <div className={`w-12 h-12 ${config.bgColor} rounded-full flex items-center justify-center mx-auto mb-3`}>
-                <Icon className={`w-6 h-6 ${config.color}`} />
-              </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{count}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{config.label}</p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Tabela de Cargas Recentes */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Cargas Recentes</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  CRT
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Origem
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Destino
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Data Coleta
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Valor
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {cargasRecentes.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                    Nenhuma carga cadastrada
-                  </td>
-                </tr>
-              ) : (
-                cargasRecentes.map((carga) => (
-                  <tr key={carga.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {carga.crt || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      {carga.origem}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      {carga.destino}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      {format(new Date(carga.dataColeta), 'dd/MM/yyyy', { locale: ptBR })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      {formatCurrency(carga.valor || 0)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusConfig[carga.status as keyof typeof statusConfig].color} ${statusConfig[carga.status as keyof typeof statusConfig].bgColor}`}>
-                        {statusConfig[carga.status as keyof typeof statusConfig].label}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
-  );
+  )
 }

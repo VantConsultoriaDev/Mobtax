@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
-import { Eye, EyeOff, Sun, Moon } from 'lucide-react'
+import { Eye, EyeOff, Sun, Moon, Truck } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -15,7 +15,6 @@ const Login: React.FC = () => {
   const { isDark, toggleTheme } = useTheme()
 
   useEffect(() => {
-    // Clear any previous errors when inputs change
     if (error) setError('')
   }, [username, password])
 
@@ -41,37 +40,43 @@ const Login: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* Theme toggle */}
-        <div className="flex justify-end">
-          <button
-            onClick={toggleTheme}
-            className="p-2 text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-200 rounded-lg"
-          >
-            {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </button>
-        </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200 flex flex-col">
+      {/* Theme Toggle */}
+      <div className="absolute top-6 right-6 z-10">
+        <button
+          onClick={toggleTheme}
+          className="btn-ghost p-2"
+          aria-label="Toggle theme"
+        >
+          {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </button>
+      </div>
 
-        <div>
-          {/* Logo */}
-          <div className="text-center">
-            <div className="mx-auto h-20 w-20 bg-primary-600 rounded-lg flex items-center justify-center mb-6">
-              <span className="text-white text-2xl font-bold">M</span>
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-8 animate-fade-in">
+          {/* Logo & Branding */}
+          <div className="text-center space-y-4">
+            <div className="flex justify-center">
+              <div className="h-16 w-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Truck className="h-8 w-8 text-white" />
+              </div>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-              MOBTAX
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Sistema de Gestão de Frotas
-            </p>
+            <div className="space-y-1">
+              <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-50">
+                MOBTAX
+              </h1>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
+                Gestão de Frotas e Transportes
+              </p>
+            </div>
           </div>
-        </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          {/* Login Form */}
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Username Field */}
+            <div className="space-y-2">
+              <label htmlFor="username" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Usuário
               </label>
               <input
@@ -83,11 +88,13 @@ const Login: React.FC = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 className="input-field"
                 placeholder="Digite seu usuário"
+                autoComplete="username"
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {/* Password Field */}
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Senha
               </label>
               <div className="relative">
@@ -100,60 +107,73 @@ const Login: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-field pr-10"
                   placeholder="Digite sua senha"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
+                    <EyeOff className="h-5 w-5" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
+                    <Eye className="h-5 w-5" />
                   )}
                 </button>
               </div>
             </div>
-          </div>
 
-          {error && (
-            <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 text-danger-700 dark:text-danger-400 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+            {/* Error Message */}
+            {error && (
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg">
+                <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                  {error}
+                </p>
+              </div>
+            )}
 
-          <div>
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary w-full justify-center text-base py-3"
             >
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  Entrando...
+                </>
+              ) : (
+                'Entrar'
+              )}
             </button>
-          </div>
+          </form>
 
-          {/* Biblical verse */}
-          <div className="text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400 italic">
-              "Entregue o seu caminho ao Senhor; confie nele, e ele agirá."
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-              Salmos 37:5
-            </p>
-          </div>
+          {/* Footer Info */}
+          <div className="space-y-6 pt-6 border-t border-slate-200 dark:border-slate-800">
+            {/* Biblical Verse */}
+            <div className="text-center space-y-2">
+              <p className="text-xs italic text-slate-500 dark:text-slate-500">
+                "Entregue o seu caminho ao Senhor; confie nele, e ele agirá."
+              </p>
+              <p className="text-xs text-slate-400 dark:text-slate-600">
+                Salmos 37:5
+              </p>
+            </div>
 
-          {/* Demo credentials hint */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
-              Credenciais de Demonstração:
-            </h3>
-            <div className="text-sm text-blue-700 dark:text-blue-400">
-              <p><strong>Admin Global:</strong></p>
-              <p>Usuário: Admin</p>
-              <p>Senha: @Vant96</p>
+            {/* Demo Credentials */}
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30 rounded-lg p-4 space-y-2">
+              <h3 className="text-sm font-semibold text-emerald-900 dark:text-emerald-300">
+                Credenciais de Demonstração:
+              </h3>
+              <div className="space-y-1 text-xs text-emerald-800 dark:text-emerald-400">
+                <p><span className="font-medium">Admin Global:</span></p>
+                <p className="font-mono ml-2">Usuário: Admin</p>
+                <p className="font-mono ml-2">Senha: @Vant96</p>
+              </div>
             </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )

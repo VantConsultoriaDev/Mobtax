@@ -132,11 +132,12 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({ children }) 
       {
         id: 'veiculo-1',
         parceiroId: 'parceiro-1',
-        placa: 'ABC-1234',
-        modelo: 'Mercedes-Benz Atego 1719',
+        placa: 'ABC1234',
+        fabricante: 'Mercedes-Benz',
+        modelo: 'Atego 1719',
         ano: 2020,
         capacidade: 8000,
-        tipo: 'caminhao',
+        tipo: 'Truck',
         isActive: true,
         createdAt: new Date('2024-01-12'),
         updatedAt: new Date('2024-01-12')
@@ -144,11 +145,12 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({ children }) 
       {
         id: 'veiculo-2',
         parceiroId: 'parceiro-2',
-        placa: 'XYZ-5678',
-        modelo: 'Ford Cargo 816',
+        placa: 'XYZ5678',
+        fabricante: 'Ford',
+        modelo: 'Cargo 816',
         ano: 2019,
         capacidade: 3500,
-        tipo: 'caminhao',
+        tipo: 'Truck',
         isActive: true,
         createdAt: new Date('2024-01-20'),
         updatedAt: new Date('2024-01-20')

@@ -28,7 +28,7 @@ export interface Endereco {
 
 export interface Parceiro {
   id: string
-  tipo: 'juridica' | 'fisica'
+  tipo: 'PF' | 'PJ'
   nome?: string
   documento?: string
   cnh?: string

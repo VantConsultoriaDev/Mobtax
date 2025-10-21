@@ -91,9 +91,11 @@ export interface MovimentacaoFinanceira {
   descricao: string
   categoria?: string
   data: Date
+  status?: 'pendente' | 'pago' | 'cancelado'
   parceiroId?: string
   cargaId?: string
   isPago?: boolean
+  observacoes?: string
   createdAt: Date
   updatedAt: Date
 }

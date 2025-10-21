@@ -54,6 +54,7 @@ export interface Motorista {
   categoriaCnh?: string
   validadeCnh?: Date
   telefone?: string
+  veiculoVinculado?: string
   isActive?: boolean
   createdAt: Date
   updatedAt: Date

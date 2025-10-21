@@ -4,10 +4,10 @@ import { useModal } from '../hooks/useModal';
 import { format, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatCurrency, parseCurrency } from '../utils/formatters';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
+import {
+  Plus,
+  Search,
+  Filter,
   Package,
   Truck,
   CheckCircle,
@@ -18,7 +18,7 @@ import {
   Trash2,
   X,
   Eye,
-  MoreVertical
+  RefreshCw
 } from 'lucide-react';
 
 const Cargas: React.FC = () => {

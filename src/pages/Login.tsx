@@ -160,18 +160,6 @@ const Login: React.FC = () => {
                 Salmos 37:5
               </p>
             </div>
-
-            {/* Demo Credentials */}
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30 rounded-lg p-4 space-y-2">
-              <h3 className="text-sm font-semibold text-emerald-900 dark:text-emerald-300">
-                Credenciais de Demonstração:
-              </h3>
-              <div className="space-y-1 text-xs text-emerald-800 dark:text-emerald-400">
-                <p><span className="font-medium">Admin Global:</span></p>
-                <p className="font-mono ml-2">Usuário: Admin</p>
-                <p className="font-mono ml-2">Senha: @Vant96</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>

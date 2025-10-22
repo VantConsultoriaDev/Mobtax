@@ -11,8 +11,7 @@ import {
   Sun, 
   Moon,
   LogOut,
-  ChevronRight,
-  Zap
+  ChevronRight
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'

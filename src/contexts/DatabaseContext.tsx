@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { DatabaseContextType, User, Parceiro, Motorista, Veiculo, MovimentacaoFinanceira, Carga } from '../types'
-import { supabase, isSupabaseEnabled } from '../lib/supabaseClient'
+
 
 const DatabaseContext = createContext<DatabaseContextType | undefined>(undefined)
 
@@ -268,13 +268,53 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({ children }) 
         setMovimentacoes(demoData.movimentacoes)
         setCargas(demoData.cargas)
       } else {
-        // Load existing data
-        setUsers(JSON.parse(savedUsers))
-        setParceiros(JSON.parse(savedParceiros))
-        setMotoristas(JSON.parse(savedMotoristas))
-        setVeiculos(JSON.parse(savedVeiculos))
-        setMovimentacoes(JSON.parse(savedMovimentacoes))
-        setCargas(JSON.parse(savedCargas))
+        // Load existing data and convert date strings back to Date objects
+        const parsedUsers = JSON.parse(savedUsers || '[]').map((user: any) => ({
+          ...user,
+          createdAt: new Date(user.createdAt),
+          updatedAt: new Date(user.updatedAt)
+        }))
+        
+        const parsedParceiros = JSON.parse(savedParceiros || '[]').map((parceiro: any) => ({
+          ...parceiro,
+          createdAt: new Date(parceiro.createdAt),
+          updatedAt: new Date(parceiro.updatedAt)
+        }))
+        
+        const parsedMotoristas = JSON.parse(savedMotoristas || '[]').map((motorista: any) => ({
+          ...motorista,
+          validadeCnh: new Date(motorista.validadeCnh),
+          createdAt: new Date(motorista.createdAt),
+          updatedAt: new Date(motorista.updatedAt)
+        }))
+        
+        const parsedVeiculos = JSON.parse(savedVeiculos || '[]').map((veiculo: any) => ({
+          ...veiculo,
+          createdAt: new Date(veiculo.createdAt),
+          updatedAt: new Date(veiculo.updatedAt)
+        }))
+        
+        const parsedMovimentacoes = JSON.parse(savedMovimentacoes || '[]').map((mov: any) => ({
+          ...mov,
+          data: new Date(mov.data),
+          createdAt: new Date(mov.createdAt),
+          updatedAt: new Date(mov.updatedAt)
+        }))
+        
+        const parsedCargas = JSON.parse(savedCargas || '[]').map((carga: any) => ({
+          ...carga,
+          dataColeta: new Date(carga.dataColeta),
+          dataEntrega: new Date(carga.dataEntrega),
+          createdAt: new Date(carga.createdAt),
+          updatedAt: new Date(carga.updatedAt)
+        }))
+        
+        setUsers(parsedUsers)
+        setParceiros(parsedParceiros)
+        setMotoristas(parsedMotoristas)
+        setVeiculos(parsedVeiculos)
+        setMovimentacoes(parsedMovimentacoes)
+        setCargas(parsedCargas)
       }
     }
 

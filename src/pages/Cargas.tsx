@@ -7,7 +7,6 @@ import { formatCurrency, parseCurrency } from '../utils/formatters';
 import {
   Plus,
   Search,
-  Filter,
   Package,
   Truck,
   CheckCircle,
@@ -16,9 +15,8 @@ import {
   DollarSign,
   Edit,
   Trash2,
-  X,
-  Eye,
-  RefreshCw
+  RefreshCw,
+  Link
 } from 'lucide-react';
 
 const Cargas: React.FC = () => {
@@ -26,7 +24,10 @@ const Cargas: React.FC = () => {
     cargas, 
     createCarga, 
     updateCarga, 
-    deleteCarga
+    deleteCarga,
+    parceiros,
+    motoristas,
+    veiculos
   } = useDatabase();
 
   const [showForm, setShowForm] = useState(false);
@@ -36,8 +37,27 @@ const Cargas: React.FC = () => {
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
   const [showStatusDropdown, setShowStatusDropdown] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{top: number, left: number} | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [originalFormData, setOriginalFormData] = useState<any>(null);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkingCarga, setLinkingCarga] = useState<any>(null);
+  const [selectedParceiro, setSelectedParceiro] = useState('');
+  const [selectedMotorista, setSelectedMotorista] = useState('');
+  const [selectedVeiculo, setSelectedVeiculo] = useState('');
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    crt: string;
+    origem: string;
+    destino: string;
+    dataColeta: string;
+    dataEntrega: string;
+    valor: string;
+    peso: string;
+    observacoes: string;
+    status: 'entregue' | 'em_transito' | 'a_coletar' | 'armazenada' | 'cancelada';
+  }>({
     crt: '',
     origem: '',
     destino: '',
@@ -120,22 +140,22 @@ const Cargas: React.FC = () => {
       // Filtro por intervalo de datas (usando dataColeta como referência)
       let matchesDateRange = true;
       if (filterStartDate && filterEndDate) {
-        const cargaDate = new Date(carga.dataColeta);
+        const cargaDate = new Date(carga.dataColeta || new Date());
         const startDate = new Date(filterStartDate);
         const endDate = new Date(filterEndDate);
         matchesDateRange = isWithinInterval(cargaDate, { start: startDate, end: endDate });
       } else if (filterStartDate) {
-        const cargaDate = new Date(carga.dataColeta);
+        const cargaDate = new Date(carga.dataColeta || new Date());
         const startDate = new Date(filterStartDate);
         matchesDateRange = cargaDate >= startDate;
       } else if (filterEndDate) {
-        const cargaDate = new Date(carga.dataColeta);
+        const cargaDate = new Date(carga.dataColeta || new Date());
         const endDate = new Date(filterEndDate);
         matchesDateRange = cargaDate <= endDate;
       }
       
       return matchSearch && matchStatus && matchesDateRange;
-    }).sort((a, b) => new Date(b.dataColeta).getTime() - new Date(a.dataColeta).getTime());
+    }).sort((a, b) => new Date(b.dataColeta || new Date()).getTime() - new Date(a.dataColeta || new Date()).getTime());
   }, [cargas, searchTerm, filterStatus, filterStartDate, filterEndDate]);
 
   // Estatísticas
@@ -160,10 +180,15 @@ const Cargas: React.FC = () => {
     }
     
     const cargaData = {
-      ...formData,
-      valor: parseCurrency(formData.valor),
+      descricao: formData.crt || 'Carga sem descrição',
+      origem: formData.origem,
+      destino: formData.destino,
       peso: parseFloat(formData.peso),
-      id: editingCarga?.id || undefined
+      valor: parseCurrency(formData.valor),
+      dataColeta: new Date(formData.dataColeta),
+      dataEntrega: new Date(formData.dataEntrega),
+      status: formData.status,
+      crt: formData.crt
     };
 
     if (editingCarga) {
@@ -176,6 +201,28 @@ const Cargas: React.FC = () => {
   };
 
   const resetForm = () => {
+    if (hasUnsavedChanges) {
+      setShowCancelConfirm(true);
+      return;
+    }
+    
+    performReset();
+  };
+
+  const handleFormChange = (field: string, value: string) => {
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+    
+    // Detectar se há mudanças comparando com os dados originais
+    if (originalFormData) {
+      const hasChanges = Object.keys(newFormData).some(key => 
+        (newFormData as any)[key] !== (originalFormData as any)[key]
+      );
+      setHasUnsavedChanges(hasChanges);
+    }
+  };
+
+  const performReset = () => {
     setFormData({
       crt: '',
       origem: '',
@@ -189,10 +236,13 @@ const Cargas: React.FC = () => {
     });
     setEditingCarga(null);
     setShowForm(false);
+    setHasUnsavedChanges(false);
+    setOriginalFormData(null);
+    setShowCancelConfirm(false);
   };
 
   const handleEdit = (carga: any) => {
-    setFormData({
+    const formDataToSet = {
       crt: carga.crt || carga.descricao || '',
       origem: carga.origem,
       destino: carga.destino,
@@ -202,9 +252,13 @@ const Cargas: React.FC = () => {
       peso: carga.peso.toString(),
       observacoes: carga.observacoes || '',
       status: carga.status
-    });
+    };
+    
+    setFormData(formDataToSet);
+    setOriginalFormData(formDataToSet);
     setEditingCarga(carga);
     setShowForm(true);
+    setHasUnsavedChanges(false);
   };
 
   const handleDelete = (id: string) => {
@@ -213,10 +267,108 @@ const Cargas: React.FC = () => {
     }
   };
 
-  const handleChangeStatus = (id: string, newStatus: string) => {
+  const handleChangeStatus = (id: string, newStatus: 'entregue' | 'em_transito' | 'a_coletar' | 'armazenada' | 'cancelada') => {
     updateCarga(id, { status: newStatus });
     setShowStatusDropdown(null);
   };
+
+  const handleLinkParceiro = (carga: any) => {
+    setLinkingCarga(carga);
+    setSelectedParceiro(carga.parceiroId || '');
+    setSelectedMotorista(carga.motoristaId || '');
+    setSelectedVeiculo(carga.veiculoId || '');
+    setShowLinkModal(true);
+  };
+
+  const handleSaveLink = () => {
+    if (linkingCarga) {
+      updateCarga(linkingCarga.id, {
+        parceiroId: selectedParceiro || undefined,
+        motoristaId: selectedMotorista || undefined,
+        veiculoId: selectedVeiculo || undefined
+      });
+      setShowLinkModal(false);
+      setLinkingCarga(null);
+      setSelectedParceiro('');
+      setSelectedMotorista('');
+      setSelectedVeiculo('');
+    }
+  };
+
+  const filteredMotoristas = useMemo(() => {
+    if (!selectedParceiro) {
+      // Retorna motoristas + parceiros PF que são motoristas
+      const parceiroMotoristas = parceiros
+        .filter(p => p.tipo === 'PF' && p.isMotorista)
+        .map(p => ({
+          id: p.id,
+          parceiroId: p.id,
+          nome: p.nome || '',
+          cpf: p.documento || '',
+          cnh: p.cnh || '',
+          categoriaCnh: '',
+          validadeCnh: new Date(),
+          telefone: p.telefone || '',
+          isActive: p.isActive,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt
+        }));
+      return [...motoristas, ...parceiroMotoristas];
+    }
+    
+    // Se um parceiro específico foi selecionado
+    const motoristasDoParceiro = motoristas.filter(m => m.parceiroId === selectedParceiro);
+    
+    // Verifica se o próprio parceiro é motorista
+    const parceiro = parceiros.find(p => p.id === selectedParceiro);
+    if (parceiro && parceiro.tipo === 'PF' && parceiro.isMotorista) {
+      const parceiroComoMotorista = {
+        id: parceiro.id,
+        parceiroId: parceiro.id,
+        nome: parceiro.nome || '',
+        cpf: parceiro.documento || '',
+        cnh: parceiro.cnh || '',
+        categoriaCnh: '',
+        validadeCnh: new Date(),
+        telefone: parceiro.telefone || '',
+        isActive: parceiro.isActive,
+        createdAt: parceiro.createdAt,
+        updatedAt: parceiro.updatedAt
+      };
+      return [...motoristasDoParceiro, parceiroComoMotorista];
+    }
+    
+    return motoristasDoParceiro;
+  }, [selectedParceiro, motoristas, parceiros]);
+
+  const filteredVeiculos = useMemo(() => {
+    if (!selectedParceiro) return veiculos;
+    return veiculos.filter(v => v.parceiroId === selectedParceiro);
+  }, [selectedParceiro, veiculos]);
+
+  // Seleção automática de veículo quando motorista é selecionado
+  React.useEffect(() => {
+    if (selectedMotorista) {
+      // Verifica se o motorista selecionado é um parceiro-motorista
+      const motoristaData = filteredMotoristas.find(m => m.id === selectedMotorista);
+      if (motoristaData) {
+        // Se for um parceiro-motorista (id do motorista = id do parceiro)
+        if (motoristaData.id === motoristaData.parceiroId) {
+          // Busca veículo vinculado ao parceiro
+          const veiculoDoParceiro = veiculos.find(v => v.parceiroId === motoristaData.parceiroId);
+          if (veiculoDoParceiro) {
+            setSelectedVeiculo(veiculoDoParceiro.id);
+          }
+        } else {
+          // Para motoristas tradicionais, busca por veiculoVinculado
+          const motoristaCompleto = motoristas.find(m => m.id === selectedMotorista);
+          if (motoristaCompleto?.veiculoVinculado) {
+            setSelectedVeiculo(motoristaCompleto.veiculoVinculado);
+          }
+        }
+      }
+    }
+  }, [selectedMotorista, filteredMotoristas, veiculos, motoristas]);
 
 
 
@@ -229,7 +381,11 @@ const Cargas: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400">Gestão de cargas e transportes</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            setShowForm(true);
+            setHasUnsavedChanges(false);
+            setOriginalFormData(null);
+          }}
           className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
         >
           <Plus className="h-5 w-5 mr-2" />
@@ -390,6 +546,9 @@ const Cargas: React.FC = () => {
                   Valor
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Veículo
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -417,13 +576,22 @@ const Cargas: React.FC = () => {
                       {carga.destino}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      {format(new Date(carga.dataColeta), 'dd/MM/yyyy', { locale: ptBR })}
+                      {carga.dataColeta ? format(new Date(carga.dataColeta), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      {format(new Date(carga.dataEntrega), 'dd/MM/yyyy', { locale: ptBR })}
+                      {carga.dataEntrega ? format(new Date(carga.dataEntrega), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                       {formatCurrency(carga.valor || 0)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                      {carga.veiculoId ? 
+                        (() => {
+                          const veiculo = veiculos.find(v => v.id === carga.veiculoId);
+                          return veiculo ? veiculo.placa : 'Veículo não encontrado';
+                        })() 
+                        : '-'
+                      }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusConfig[carga.status as keyof typeof statusConfig].color}`}>
@@ -434,38 +602,38 @@ const Cargas: React.FC = () => {
                       <div className="flex space-x-2 items-center">
                         <button
                           onClick={() => handleEdit(carga)}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                          title="Editar"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <div className="relative">
                           <button
-                            onClick={() => setShowStatusDropdown(showStatusDropdown === carga.id ? null : carga.id)}
-                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                            onClick={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setDropdownPosition({
+                                top: rect.bottom + window.scrollY + 5,
+                                left: rect.left + window.scrollX - 150
+                              });
+                              setShowStatusDropdown(showStatusDropdown === carga.id ? null : carga.id);
+                            }}
+                            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
                             title="Alterar status"
                           >
                             <RefreshCw className="h-4 w-4" />
                           </button>
-                          {showStatusDropdown === carga.id && (
-                            <div className="absolute right-0 mt-2 w-44 z-50 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5">
-                              <div className="py-1">
-                                {Object.entries(statusConfig).map(([key, cfg]) => (
-                                  <button
-                                    key={key}
-                                    onClick={() => handleChangeStatus(carga.id, key)}
-                                    className="w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                  >
-                                    {React.createElement(cfg.icon, { className: `h-4 w-4 mr-2 ${cfg.textColor}` })}
-                                    {cfg.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                         </div>
                         <button
+                          onClick={() => handleLinkParceiro(carga)}
+                          className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 p-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                          title="Vincular parceiro/motorista"
+                        >
+                          <Link className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => handleDelete(carga.id)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          title="Excluir"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -507,7 +675,7 @@ const Cargas: React.FC = () => {
                     <input
                       type="text"
                       value={formData.crt}
-                      onChange={(e) => setFormData({ ...formData, crt: e.target.value.slice(0, 10) })}
+                      onChange={(e) => handleFormChange('crt', e.target.value.slice(0, 10))}
                       placeholder="Ex: BR722"
                       className="input-field"
                       maxLength={10}
@@ -521,7 +689,7 @@ const Cargas: React.FC = () => {
                     </label>
                     <select
                       value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as 'entregue' | 'em_transito' | 'a_coletar' | 'armazenada' | 'cancelada' })}
                       className="input-field"
                       required
                     >
@@ -542,7 +710,7 @@ const Cargas: React.FC = () => {
                     <input
                       type="text"
                       value={formData.origem}
-                      onChange={(e) => setFormData({ ...formData, origem: e.target.value })}
+                      onChange={(e) => handleFormChange('origem', e.target.value)}
                       className="input-field"
                       required
                     />
@@ -555,7 +723,7 @@ const Cargas: React.FC = () => {
                     <input
                       type="text"
                       value={formData.destino}
-                      onChange={(e) => setFormData({ ...formData, destino: e.target.value })}
+                      onChange={(e) => handleFormChange('destino', e.target.value)}
                       className="input-field"
                       required
                     />
@@ -653,6 +821,173 @@ const Cargas: React.FC = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dropdown de status sobreposto */}
+      {showStatusDropdown && dropdownPosition && (
+        <>
+          {/* Overlay para fechar o dropdown ao clicar fora */}
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => {
+              setShowStatusDropdown(null);
+              setDropdownPosition(null);
+            }}
+          />
+          {/* Dropdown sobreposto */}
+          <div 
+            className="fixed z-50 w-48 rounded-lg shadow-xl bg-white dark:bg-gray-800 ring-1 ring-gray-200 dark:ring-gray-700 border border-gray-100 dark:border-gray-600"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`
+            }}
+          >
+            <div className="py-2">
+              <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
+                Alterar Status
+              </div>
+              {Object.entries(statusConfig).map(([key, cfg]) => (
+                <button
+                  key={key}
+                  onClick={() => handleChangeStatus(showStatusDropdown, key as 'entregue' | 'em_transito' | 'a_coletar' | 'armazenada' | 'cancelada')}
+                  className={`w-full flex items-center px-4 py-3 text-sm transition-colors ${
+                    filteredCargas.find(c => c.id === showStatusDropdown)?.status === key 
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {React.createElement(cfg.icon, { 
+                    className: `h-4 w-4 mr-3 ${
+                      filteredCargas.find(c => c.id === showStatusDropdown)?.status === key ? 'text-blue-600 dark:text-blue-400' : cfg.textColor
+                    }` 
+                  })}
+                  <span className="flex-1 text-left">{cfg.label}</span>
+                  {filteredCargas.find(c => c.id === showStatusDropdown)?.status === key && (
+                    <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modal de vinculação */}
+      {showLinkModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Vincular Parceiro/Motorista
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Parceiro
+                </label>
+                <select
+                  value={selectedParceiro}
+                  onChange={(e) => {
+                    setSelectedParceiro(e.target.value);
+                    setSelectedMotorista('');
+                    setSelectedVeiculo('');
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">Selecione um parceiro</option>
+                  {parceiros.map(parceiro => (
+                    <option key={parceiro.id} value={parceiro.id}>
+                      {parceiro.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Motorista
+                </label>
+                <select
+                  value={selectedMotorista}
+                  onChange={(e) => setSelectedMotorista(e.target.value)}
+                  disabled={!selectedParceiro}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:opacity-50"
+                >
+                  <option value="">Selecione um motorista</option>
+                  {filteredMotoristas.map(motorista => (
+                    <option key={motorista.id} value={motorista.id}>
+                      {motorista.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Veículo
+                </label>
+                <select
+                  value={selectedVeiculo}
+                  onChange={(e) => setSelectedVeiculo(e.target.value)}
+                  disabled={!selectedParceiro}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:opacity-50"
+                >
+                  <option value="">Selecione um veículo</option>
+                  {filteredVeiculos.map(veiculo => (
+                    <option key={veiculo.id} value={veiculo.id}>
+                      {veiculo.placa} - {veiculo.modelo}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setShowLinkModal(false)}
+                className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveLink}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmação para cancelar */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center mb-4">
+              <AlertTriangle className="h-6 w-6 text-yellow-500 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Confirmar Cancelamento
+              </h3>
+            </div>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Você tem alterações não salvas. Tem certeza que deseja cancelar? Todas as alterações serão perdidas.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Continuar Editando
+              </button>
+              <button
+                onClick={performReset}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Descartar Alterações
+              </button>
             </div>
           </div>
         </div>

@@ -18,11 +18,8 @@ import {
   Eye,
   EyeOff,
   Mail,
-  Phone,
   Calendar,
-  CheckCircle,
-  XCircle,
-  AlertCircle
+  CheckCircle
 } from 'lucide-react'
 
 interface UserForm {
@@ -122,7 +119,7 @@ const Usuarios: React.FC = () => {
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           user.email.toLowerCase().includes(searchTerm.toLowerCase())
+                           (user.email || '').toLowerCase().includes(searchTerm.toLowerCase())
       const matchesRole = filterRole === 'all' || user.role === filterRole
       const matchesStatus = filterStatus === 'all' || 
                            (filterStatus === 'active' && user.isActive) ||
@@ -162,9 +159,7 @@ const Usuarios: React.FC = () => {
       email: userForm.email,
       password: userForm.password,
       role: userForm.role,
-      isActive: userForm.isActive,
-      createdAt: editingId ? undefined : new Date().toISOString(),
-      lastLogin: editingId ? undefined : null
+      isActive: userForm.isActive
     }
 
     if (editingId) {
@@ -402,7 +397,7 @@ const Usuarios: React.FC = () => {
                         </div>
                         <div className="ml-3">
                           <div className="text-sm font-medium text-gray-900 dark:text-white">{user.username}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{user.email || 'Email não informado'}</div>
                         </div>
                       </div>
                     </td>
@@ -415,7 +410,7 @@ const Usuarios: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-900 dark:text-white">
                         <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                        {user.email}
+                        {user.email || 'Email não informado'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -425,7 +420,7 @@ const Usuarios: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {user.lastLogin ? format(new Date(user.lastLogin), 'dd/MM/yyyy HH:mm') : 'Nunca'}
+                      Nunca
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${

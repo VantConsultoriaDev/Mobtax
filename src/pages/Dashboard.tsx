@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { useDatabase } from '../contexts/DatabaseContext'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { formatCurrency } from '../utils/formatters'
+import SupabaseTest from '../components/SupabaseTest'
 import { 
   Package, 
   Truck, 
@@ -10,12 +11,11 @@ import {
   Clock, 
   AlertTriangle,
   DollarSign,
-  ArrowUpRight,
-  ArrowDownRight
+  ArrowUpRight
 } from 'lucide-react'
 
 export default function Dashboard() {
-  const { cargas, parceiros } = useDatabase()
+  const { cargas } = useDatabase()
 
   const cargoStats = useMemo(() => {
     const aColeta = cargas.filter(carga => carga.status === 'a_coletar').length
@@ -63,6 +63,9 @@ export default function Dashboard() {
           Visão geral do seu sistema de gestão
         </p>
       </div>
+
+      {/* Teste de Conexão Supabase */}
+      <SupabaseTest />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

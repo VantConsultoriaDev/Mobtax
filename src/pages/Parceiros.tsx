@@ -1,17 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useModal } from '../hooks/useModal';
-import { format } from 'date-fns';
-import { XCircle, CheckCircle } from 'lucide-react';
+
+import { XCircle, CheckCircle, AlertTriangle, Unlink } from 'lucide-react';
 import { 
   formatDocument, 
-  formatCurrency, 
-  formatPlaca, 
-  parseCurrency, 
-  parseDocument,
-  forceUpperCase,
-  isValidCPF,
-  isValidCNPJ
+  formatPlaca
 } from '../utils/formatters';
 
 export default function Parceiros() {
@@ -53,6 +47,10 @@ export default function Parceiros() {
   const [veiculoSearchTerm, setVeiculoSearchTerm] = useState('');
   const [motoristaSearchTerm, setMotoristaSearchTerm] = useState('');
 
+  // Estados para modais de confirmação de exclusão
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{type: 'veiculo' | 'motorista' | 'parceiro', id: string, name: string} | null>(null);
+
   // Forms
   const [parceiroForm, setParceiroForm] = useState({
     nome: '',
@@ -83,7 +81,7 @@ export default function Parceiros() {
     fabricante: '',
     modelo: '',
     ano: '',
-    chassi: '',
+    chassis: '',
     carroceria: '',
     quantidadeCarretas: 1,
     possuiDolly: false,
@@ -144,7 +142,7 @@ export default function Parceiros() {
         fabricante: '',
         modelo: '',
         ano: '',
-        chassi: '',
+        chassis: '',
         carroceria: '',
         quantidadeCarretas: 1,
         possuiDolly: false,
@@ -181,18 +179,22 @@ export default function Parceiros() {
                          (filterStatus === 'inactive' && !parceiro.isActive);
       
       return matchSearch && matchTipo && matchStatus;
-    }).sort((a, b) => a.nome?.localeCompare(b.nome) || 0);
+    }).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
   }, [parceiros, searchTerm, filterTipo, filterStatus]);
 
   // Motoristas e veículos do parceiro selecionado
   const motoristasParceiro = useMemo(() => {
     if (!selectedParceiro) return [];
-    const motoristas = getMotoristasByParceiro(selectedParceiro.id);
+    const motoristasRegistrados = getMotoristasByParceiro(selectedParceiro.id);
+    
+    // Retorna apenas os motoristas registrados, sem incluir o próprio parceiro
+    // mesmo que ele seja marcado como motorista (isMotorista: true)
+    let todosMotoristas = [...motoristasRegistrados];
     
     // Filtrar por nome do motorista
-    if (!motoristaSearchTerm) return motoristas;
+    if (!motoristaSearchTerm) return todosMotoristas;
     
-    return motoristas.filter(motorista => 
+    return todosMotoristas.filter(motorista => 
       motorista.nome?.toLowerCase().includes(motoristaSearchTerm.toLowerCase())
     );
   }, [selectedParceiro, getMotoristasByParceiro, motoristaSearchTerm]);
@@ -246,10 +248,16 @@ export default function Parceiros() {
   const handleParceiroSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validar se o tipo é válido
+    if (parceiroForm.tipo !== 'PF' && parceiroForm.tipo !== 'PJ') {
+      alert('Tipo deve ser PF ou PJ');
+      return;
+    }
+    
     const parceiroData = {
       ...parceiroForm,
-      isActive: true, // Sempre ativo por padrão
-      id: editingParceiro?.id || undefined
+      tipo: parceiroForm.tipo as 'PF' | 'PJ',
+      isActive: true // Sempre ativo por padrão
     };
 
     if (editingParceiro) {
@@ -298,11 +306,14 @@ export default function Parceiros() {
   };
 
   const handleDeleteParceiro = (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este parceiro?')) {
-      deleteParceiro(id);
-      if (selectedParceiro?.id === id) {
-        setSelectedParceiro(null);
-      }
+    const parceiro = parceiros.find(p => p.id === id);
+    if (parceiro) {
+      setDeleteTarget({
+        type: 'parceiro',
+        id: id,
+        name: parceiro.nome
+      });
+      setShowDeleteConfirm(true);
     }
   };
 
@@ -338,8 +349,7 @@ export default function Parceiros() {
     
     const motoristaData = {
       ...motoristaForm,
-      parceiroId: selectedParceiro.id,
-      id: editingMotorista?.id || undefined
+      parceiroId: selectedParceiro.id
     };
 
     if (editingMotorista) {
@@ -376,8 +386,14 @@ export default function Parceiros() {
   };
 
   const handleDeleteMotorista = (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este motorista?')) {
-      deleteMotorista(id);
+    const motorista = motoristasParceiro.find(m => m.id === id);
+    if (motorista) {
+      setDeleteTarget({
+        type: 'motorista',
+        id: id,
+        name: motorista.nome
+      });
+      setShowDeleteConfirm(true);
     }
   };
 
@@ -388,7 +404,7 @@ export default function Parceiros() {
     const veiculoData = {
       ...veiculoForm,
       parceiroId: selectedParceiro.id,
-      id: editingVeiculo?.id || undefined
+      ano: veiculoForm.ano ? parseInt(veiculoForm.ano) : undefined
     };
 
     if (editingVeiculo) {
@@ -408,7 +424,7 @@ export default function Parceiros() {
       fabricante: '',
       modelo: '',
       ano: '',
-      chassi: '',
+      chassis: '',
       carroceria: '',
       quantidadeCarretas: 1,
       possuiDolly: false,
@@ -431,7 +447,7 @@ export default function Parceiros() {
       fabricante: veiculo.fabricante || '',
       modelo: veiculo.modelo || '',
       ano: veiculo.ano || '',
-      chassi: veiculo.chassi || '',
+      chassis: veiculo.chassis || '',
       carroceria: veiculo.carroceria || '',
       quantidadeCarretas: veiculo.quantidadeCarretas || 1,
       possuiDolly: veiculo.possuiDolly || false,
@@ -447,8 +463,32 @@ export default function Parceiros() {
   };
 
   const handleDeleteVeiculo = (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este veículo?')) {
-      deleteVeiculo(id);
+    const veiculo = veiculosParceiro.find(v => v.id === id);
+    if (veiculo) {
+      setDeleteTarget({
+        type: 'veiculo',
+        id: id,
+        name: `${veiculo.fabricante} ${veiculo.modelo} - ${veiculo.tipo === 'Truck' ? veiculo.placa : veiculo.placaCavalo}`
+      });
+      setShowDeleteConfirm(true);
+    }
+  };
+
+  // Handler para confirmar exclusão
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      if (deleteTarget.type === 'veiculo') {
+        deleteVeiculo(deleteTarget.id);
+      } else if (deleteTarget.type === 'motorista') {
+        deleteMotorista(deleteTarget.id);
+      } else if (deleteTarget.type === 'parceiro') {
+        deleteParceiro(deleteTarget.id);
+        if (selectedParceiro?.id === deleteTarget.id) {
+          setSelectedParceiro(null);
+        }
+      }
+      setShowDeleteConfirm(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -459,13 +499,56 @@ export default function Parceiros() {
   };
 
   const handleVinculacaoSubmit = (vinculadoId: string) => {
+    // Primeiro, desvincular qualquer vinculação anterior
+    handleDesvincular(vinculacaoData.type, vinculacaoData.item);
+    
+    // Se vinculadoId estiver vazio, apenas desvincular (não vincular novamente)
+    if (!vinculadoId) {
+      setShowVinculacaoModal(false);
+      return;
+    }
+    
+    // Desvincular o item que será vinculado (se já estiver vinculado a outro)
     if (vinculacaoData.type === 'motorista') {
-      updateMotorista(vinculacaoData.item.id, {
-        ...vinculacaoData.item,
-        veiculoVinculado: vinculadoId
-      });
-      // Atualizar veículo também
-      if (vinculadoId) {
+      // Se estamos vinculando um veículo a um motorista, desvincular o veículo de qualquer outro motorista
+      const veiculo = veiculosParceiro.find(v => v.id === vinculadoId);
+      if (veiculo && veiculo.motoristaVinculado) {
+        handleDesvincular('veiculo', veiculo);
+      }
+    } else {
+      // Se estamos vinculando um motorista a um veículo, desvincular o motorista de qualquer outro veículo
+      const motorista = motoristasParceiro.find(m => m.id === vinculadoId);
+      if (motorista) {
+        const veiculoAtual = motorista.id.endsWith('_as_driver') 
+          ? veiculosParceiro.find(v => v.motoristaVinculado === motorista.parceiroId)
+          : veiculosParceiro.find(v => v.id === motorista.veiculoVinculado);
+        if (veiculoAtual) {
+          handleDesvincular('motorista', motorista);
+        }
+      }
+    }
+    
+    // Agora fazer a nova vinculação
+    if (vinculacaoData.type === 'motorista') {
+      // Verificar se é um parceiro-motorista (ID termina com '_as_driver')
+      const isParceiroMotorista = vinculacaoData.item.id.endsWith('_as_driver');
+      
+      if (isParceiroMotorista) {
+        // Para parceiros-motoristas, apenas vinculamos o veículo ao parceiro
+        const veiculo = veiculosParceiro.find(v => v.id === vinculadoId);
+        if (veiculo) {
+          updateVeiculo(vinculadoId, {
+            ...veiculo,
+            motoristaVinculado: vinculacaoData.item.parceiroId // Usar o ID do parceiro, não o ID virtual
+          });
+        }
+      } else {
+        // Para motoristas registrados, usar a lógica original
+        updateMotorista(vinculacaoData.item.id, {
+          ...vinculacaoData.item,
+          veiculoVinculado: vinculadoId
+        });
+        // Atualizar veículo também
         const veiculo = veiculosParceiro.find(v => v.id === vinculadoId);
         if (veiculo) {
           updateVeiculo(vinculadoId, {
@@ -475,22 +558,79 @@ export default function Parceiros() {
         }
       }
     } else {
+      // Vinculação de veículo
       updateVeiculo(vinculacaoData.item.id, {
         ...vinculacaoData.item,
         motoristaVinculado: vinculadoId
       });
       // Atualizar motorista também
-      if (vinculadoId) {
-        const motorista = motoristasParceiro.find(m => m.id === vinculadoId);
-        if (motorista) {
+      const motorista = motoristasParceiro.find(m => m.id === vinculadoId);
+      if (motorista) {
+        // Verificar se é um parceiro-motorista
+        const isParceiroMotorista = motorista.id.endsWith('_as_driver');
+        
+        if (!isParceiroMotorista) {
           updateMotorista(vinculadoId, {
             ...motorista,
             veiculoVinculado: vinculacaoData.item.id
           });
         }
+        // Para parceiros-motoristas, a vinculação já está feita no veículo
       }
     }
     setShowVinculacaoModal(false);
+  };
+
+  const handleDesvincular = (type: 'motorista' | 'veiculo', item: any) => {
+    if (type === 'motorista') {
+      // Verificar se é um parceiro-motorista (ID termina com '_as_driver')
+      const isParceiroMotorista = item.id.endsWith('_as_driver');
+      
+      if (isParceiroMotorista) {
+        // Para parceiros-motoristas, encontrar o veículo vinculado e remover a vinculação
+        const veiculoVinculado = veiculosParceiro.find(v => v.motoristaVinculado === item.parceiroId);
+        if (veiculoVinculado) {
+          updateVeiculo(veiculoVinculado.id, {
+            ...veiculoVinculado,
+            motoristaVinculado: ''
+          });
+        }
+      } else {
+        // Para motoristas registrados, remover vinculação do motorista
+        updateMotorista(item.id, {
+          ...item,
+          veiculoVinculado: ''
+        });
+        
+        // Também remover vinculação do veículo
+        const veiculoVinculado = veiculosParceiro.find(v => v.motoristaVinculado === item.id);
+        if (veiculoVinculado) {
+          updateVeiculo(veiculoVinculado.id, {
+            ...veiculoVinculado,
+            motoristaVinculado: ''
+          });
+        }
+      }
+    } else {
+      // Desvinculação de veículo
+      updateVeiculo(item.id, {
+        ...item,
+        motoristaVinculado: ''
+      });
+      
+      // Também remover vinculação do motorista se não for parceiro-motorista
+      const motoristaVinculado = motoristasParceiro.find(m => 
+        m.id === item.motoristaVinculado || 
+        (m.id.endsWith('_as_driver') && m.parceiroId === item.motoristaVinculado)
+      );
+      
+      if (motoristaVinculado && !motoristaVinculado.id.endsWith('_as_driver')) {
+        updateMotorista(motoristaVinculado.id, {
+          ...motoristaVinculado,
+          veiculoVinculado: ''
+        });
+      }
+    }
   };
 
   if (!selectedParceiro) {
@@ -703,7 +843,7 @@ export default function Parceiros() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {formatDocument(parceiro.documento, parceiro.tipo)}
+                      {formatDocument(parceiro.documento || '', parceiro.tipo)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 dark:text-white">{parceiro.email}</div>
@@ -739,7 +879,7 @@ export default function Parceiros() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
-                        {parceiro.status === 'Bloqueado' || !parceiro.isActive ? (
+                        {!parceiro.isActive ? (
                           <button
                             onClick={() => handleUnblockParceiro(parceiro)}
                             className="text-green-600 hover:text-green-800 dark:text-green-400 p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20"
@@ -868,7 +1008,7 @@ export default function Parceiros() {
                           type="text"
                           value={parceiroForm.documento}
                           onChange={(e) => {
-                            const formatted = formatDocument(e.target.value, parceiroForm.tipo);
+                            const formatted = formatDocument(e.target.value, parceiroForm.tipo as 'PF' | 'PJ');
                             setParceiroForm({ ...parceiroForm, documento: formatted });
                           }}
                           className="input-field"
@@ -980,7 +1120,7 @@ export default function Parceiros() {
                           type="text"
                           value={parceiroForm.documento}
                           onChange={(e) => {
-                            const formatted = formatDocument(e.target.value, parceiroForm.tipo);
+                            const formatted = formatDocument(e.target.value, parceiroForm.tipo as 'PF' | 'PJ');
                             setParceiroForm({ ...parceiroForm, documento: formatted });
                           }}
                           className="input-field"
@@ -1203,7 +1343,10 @@ export default function Parceiros() {
           {/* Lista de veículos */}
           <div className="space-y-3">
             {veiculosParceiro.map((veiculo) => {
-              const motoristaVinculado = motoristasParceiro.find(m => m.id === veiculo.motoristaVinculado);
+              const motoristaVinculado = motoristasParceiro.find(m => 
+                m.id === veiculo.motoristaVinculado || 
+                (m.id.endsWith('_as_driver') && m.parceiroId === veiculo.motoristaVinculado)
+              );
               
               return (
                 <div key={veiculo.id} className="card p-4 hover:shadow-md transition-shadow">
@@ -1253,11 +1396,29 @@ export default function Parceiros() {
                       {/* Motorista */}
                       <div>
                         {motoristaVinculado ? (
-                          <div>
-                            <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                              {motoristaVinculado.nome}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Vinculado</p>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                                {motoristaVinculado.nome}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Vinculado</p>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={() => handleVincular('veiculo', veiculo)}
+                                className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 p-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                                title="Alterar vinculação"
+                              >
+                                🔄
+                              </button>
+                              <button
+                                onClick={() => handleDesvincular('veiculo', veiculo)}
+                                className="text-red-600 hover:text-red-800 dark:text-red-400 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                title="Desvincular motorista"
+                              >
+                                <Unlink className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <button
@@ -1272,7 +1433,7 @@ export default function Parceiros() {
                       {/* Chassi */}
                       <div className="hidden lg:block">
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Chassi: {veiculo.chassi}
+                          Chassi: {veiculo.chassis}
                         </p>
                       </div>
                     </div>
@@ -1355,7 +1516,9 @@ export default function Parceiros() {
           {/* Lista de motoristas */}
           <div className="space-y-3">
             {motoristasParceiro.map((motorista) => {
-              const veiculoVinculado = veiculosParceiro.find(v => v.id === motorista.veiculoVinculado);
+              const veiculoVinculado = motorista.id.endsWith('_as_driver') 
+                ? veiculosParceiro.find(v => v.motoristaVinculado === motorista.parceiroId)
+                : veiculosParceiro.find(v => v.id === motorista.veiculoVinculado);
               
               return (
                 <div key={motorista.id} className="card p-4 hover:shadow-md transition-shadow">
@@ -1385,13 +1548,31 @@ export default function Parceiros() {
                       {/* Veículo */}
                       <div>
                         {veiculoVinculado ? (
-                          <div>
-                            <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                              {veiculoVinculado.fabricante} {veiculoVinculado.modelo}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {veiculoVinculado.tipo === 'Truck' ? veiculoVinculado.placa : veiculoVinculado.placaCavalo}
-                            </p>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                                {veiculoVinculado.fabricante} {veiculoVinculado.modelo}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {veiculoVinculado.tipo === 'Truck' ? veiculoVinculado.placa : veiculoVinculado.placaCavalo}
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={() => handleVincular('motorista', motorista)}
+                                className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 p-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                                title="Alterar vinculação"
+                              >
+                                🔄
+                              </button>
+                              <button
+                                onClick={() => handleDesvincular('motorista', motorista)}
+                                className="text-red-600 hover:text-red-800 dark:text-red-400 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                title="Desvincular veículo"
+                              >
+                                <Unlink className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <button
@@ -1653,8 +1834,8 @@ export default function Parceiros() {
                      </label>
                      <input
                        type="text"
-                       value={veiculoForm.chassi}
-                       onChange={(e) => setVeiculoForm({ ...veiculoForm, chassi: e.target.value })}
+                       value={veiculoForm.chassis}
+                      onChange={(e) => setVeiculoForm({ ...veiculoForm, chassis: e.target.value })}
                        className="input-field"
                      />
                    </div>
@@ -1898,6 +2079,59 @@ export default function Parceiros() {
          </div>
        )}
 
+      {/* Modal de confirmação de exclusão */}
+      {showDeleteConfirm && deleteTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center mb-4">
+              <AlertTriangle className="h-6 w-6 text-red-500 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Confirmar Exclusão
+              </h3>
+            </div>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Tem certeza que deseja excluir {
+                deleteTarget.type === 'veiculo' ? 'o veículo' : 
+                deleteTarget.type === 'motorista' ? 'o motorista' : 
+                'o parceiro'
+              }{' '}
+              <span className="font-semibold">{deleteTarget.name}</span>?
+              {deleteTarget.type === 'veiculo' && (
+                <span className="block mt-2 text-sm text-red-600 dark:text-red-400">
+                  Esta ação também removerá qualquer vinculação com motoristas.
+                </span>
+              )}
+              {deleteTarget.type === 'motorista' && (
+                <span className="block mt-2 text-sm text-red-600 dark:text-red-400">
+                  Esta ação também removerá qualquer vinculação com veículos.
+                </span>
+              )}
+              {deleteTarget.type === 'parceiro' && (
+                <span className="block mt-2 text-sm text-red-600 dark:text-red-400">
+                  Esta ação removerá o parceiro e todos os seus motoristas e veículos associados.
+                </span>
+              )}
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeleteTarget(null);
+                }}
+                className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
      </div>
    );

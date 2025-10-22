@@ -15,7 +15,8 @@ import {
   X,
   CheckCircle,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react'
 
 const Financeiro: React.FC = () => {
@@ -28,6 +29,8 @@ const Financeiro: React.FC = () => {
 
   const [showForm, setShowForm] = useState(false)
   const [editingMovimentacao, setEditingMovimentacao] = useState<any>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{id: string, descricao: string} | null>(null)
   
   const { modalRef } = useModal({
     isOpen: showForm,
@@ -51,6 +54,8 @@ const Financeiro: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('')
   const [filterStartDate, setFilterStartDate] = useState('')
   const [filterEndDate, setFilterEndDate] = useState('')
+  const [showStatusDropdown, setShowStatusDropdown] = useState<string | null>(null)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
 
   const [formData, setFormData] = useState({
     descricao: '',
@@ -120,8 +125,10 @@ const Financeiro: React.FC = () => {
     
     const movimentacaoData = {
       ...formData,
+      tipo: formData.tipo as 'receita' | 'despesa',
+      status: formData.status as 'pendente' | 'pago' | 'cancelado',
       valor: parseCurrency(formData.valor),
-      id: editingMovimentacao?.id || undefined
+      data: new Date(formData.data)
     }
 
     if (editingMovimentacao) {
@@ -162,10 +169,28 @@ const Financeiro: React.FC = () => {
   }
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta movimentação?')) {
-      deleteMovimentacao(id)
+    const movimentacao = movimentacoes.find(m => m.id === id)
+    if (movimentacao) {
+      setDeleteTarget({
+        id: id,
+        descricao: movimentacao.descricao
+      })
+      setShowDeleteConfirm(true)
     }
   }
+
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      deleteMovimentacao(deleteTarget.id)
+      setShowDeleteConfirm(false)
+      setDeleteTarget(null)
+    }
+  }
+
+  const handleChangeStatus = (id: string, newStatus: 'pendente' | 'pago' | 'cancelado') => {
+    updateMovimentacao(id, { status: newStatus });
+    setShowStatusDropdown(null);
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -331,14 +356,30 @@ const Financeiro: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleEdit(movimentacao)}
-                          className="btn-ghost p-2"
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                           title="Editar"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setDropdownPosition({
+                                top: rect.bottom + window.scrollY + 5,
+                                left: rect.left + window.scrollX - 150
+                              });
+                              setShowStatusDropdown(showStatusDropdown === movimentacao.id ? null : movimentacao.id);
+                            }}
+                            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                            title="Alterar status"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </button>
+                        </div>
                         <button
                           onClick={() => handleDelete(movimentacao.id)}
-                          className="btn-ghost p-2 hover:text-red-600 dark:hover:text-red-400"
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                           title="Excluir"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -352,6 +393,36 @@ const Financeiro: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Dropdown de Status */}
+      {showStatusDropdown && (
+        <div 
+          className="fixed z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg py-2 min-w-[160px]"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`
+          }}
+        >
+          {Object.entries(statusConfig).map(([key, config]) => (
+            <button
+              key={key}
+              onClick={() => handleChangeStatus(showStatusDropdown, key as 'pendente' | 'pago' | 'cancelado')}
+              className="w-full px-4 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 text-sm"
+            >
+              <config.icon className="h-4 w-4" />
+              {config.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Overlay para fechar dropdown */}
+      {showStatusDropdown && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowStatusDropdown(null)}
+        />
+      )}
 
       {/* Modal */}
       {showForm && (
@@ -476,6 +547,44 @@ const Financeiro: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmação de exclusão */}
+      {showDeleteConfirm && deleteTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center mb-4">
+              <AlertTriangle className="h-6 w-6 text-red-500 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Confirmar Exclusão
+              </h3>
+            </div>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Tem certeza que deseja excluir a movimentação{' '}
+              <span className="font-semibold">{deleteTarget.descricao}</span>?
+              <span className="block mt-2 text-sm text-red-600 dark:text-red-400">
+                Esta ação não pode ser desfeita.
+              </span>
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeleteTarget(null);
+                }}
+                className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Excluir
+              </button>
+            </div>
           </div>
         </div>
       )}

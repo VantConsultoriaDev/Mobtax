@@ -166,6 +166,6 @@ export const isValidCNPJ = (cnpj: string): boolean => {
 };
 
 // Função para forçar maiúsculas (exceto campos específicos)
-export const forceUpperCase = (value: string, exceptions: string[] = ['password', 'senha']): string => {
+export const forceUpperCase = (value: string): string => {
   return value.toUpperCase();
 };

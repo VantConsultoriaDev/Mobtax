@@ -311,7 +311,7 @@ export default function Parceiros() {
       setDeleteTarget({
         type: 'parceiro',
         id: id,
-        name: parceiro.nome
+        name: parceiro.nome || 'Parceiro sem nome'
       });
       setShowDeleteConfirm(true);
     }
@@ -2095,7 +2095,7 @@ export default function Parceiros() {
                 deleteTarget.type === 'motorista' ? 'o motorista' : 
                 'o parceiro'
               }{' '}
-              <span className="font-semibold">{deleteTarget.name}</span>?
+              <span className="font-semibold">{deleteTarget?.name}</span>?
               {deleteTarget.type === 'veiculo' && (
                 <span className="block mt-2 text-sm text-red-600 dark:text-red-400">
                   Esta ação também removerá qualquer vinculação com motoristas.

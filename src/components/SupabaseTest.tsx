@@ -21,7 +21,7 @@ const SupabaseTest: React.FC = () => {
       setConnectionStatus('testing');
       
       // Testa a conexão verificando as configurações do banco
-      const { data, error } = await supabase!.auth.getSession();
+      await supabase!.auth.getSession();
       
       // Se chegou até aqui sem erro, a conexão está funcionando
       setConnectionStatus('connected');
